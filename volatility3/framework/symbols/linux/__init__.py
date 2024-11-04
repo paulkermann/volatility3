@@ -2,15 +2,18 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import math
+import string
 import contextlib
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Tuple, Optional, Union
+from typing import Iterator, List, Tuple, Optional, Union, Dict
 
 from volatility3 import framework
 from volatility3.framework import constants, exceptions, interfaces, objects
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.linux import extensions
+from volatility3.framework.layers import scanners
+from volatility3.framework.constants import linux as linux_constants
 
 
 class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
@@ -832,3 +835,100 @@ class PageCache(object):
             page = self.vmlinux.object("page", offset=page_addr, absolute=True)
             if page:
                 yield page
+
+
+class VMCoreInfo(interfaces.configuration.VersionableInterface):
+    _required_framework_version = (2, 11, 0)
+
+    _version = (1, 0, 0)
+
+    @staticmethod
+    def _vmcoreinfo_data_to_dict(
+        vmcoreinfo_data,
+    ) -> Optional[Dict[str, str]]:
+        """Converts the input VMCoreInfo data buffer into a dictionary"""
+
+        # Ensure the whole buffer is printable
+        if not all(c in string.printable.encode() for c in vmcoreinfo_data):
+            # Abort, we are in the wrong place
+            return None
+
+        vmcoreinfo_dict = dict()
+        for line in vmcoreinfo_data.decode().splitlines():
+            if not line:
+                break
+
+            key, value = line.split("=", 1)
+            vmcoreinfo_dict[key] = value
+
+        return vmcoreinfo_dict
+
+    @classmethod
+    def search_vmcoreinfo_elf_note(
+        cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
+        progress_callback: constants.ProgressCallback = None,
+    ) -> Iterator[Tuple[int, Dict[str, str]]]:
+        """Enumerates each VMCoreInfo ELF note table found in memory along with its offset.
+
+        This approach is independent of any external ISF symbol or type, requiring only the
+        Elf64_Note found in 'elf.json', which is already included in the framework.
+
+        Args:
+            context: The context to retrieve required elements (layers, symbol tables) from
+            layer_name: The layer within the context in which the module exists
+            progress_callback: A function that takes a percentage (and an optional description) that will be called periodically
+
+        Yields:
+            Tuples with the VMCoreInfo ELF note offset and the VMCoreInfo table parsed in a dictionary.
+        """
+
+        elf_table_name = intermed.IntermediateSymbolTable.create(
+            context, "elf_symbol_table", "linux", "elf"
+        )
+        module = context.module(elf_table_name, layer_name, 0)
+        layer = context.layers[layer_name]
+
+        # Both Elf32_Note and Elf64_Note are of the same size
+        elf_note_size = context.symbol_space[elf_table_name].get_type("Elf64_Note").size
+
+        for vmcoreinfo_offset in layer.scan(
+            scanner=scanners.BytesScanner(linux_constants.VMCOREINFO_MAGIC_ALIGNED),
+            context=context,
+            progress_callback=progress_callback,
+        ):
+            # vmcoreinfo_note kernels >= 2.6.24 fd59d231f81cb02870b9cf15f456a897f3669b4e
+            vmcoreinfo_elf_note_offset = vmcoreinfo_offset - elf_note_size
+
+            # Elf32_Note and Elf64_Note are identical, so either can be used interchangeably here
+            elf_note = module.object(
+                object_type="Elf64_Note",
+                offset=vmcoreinfo_elf_note_offset,
+                absolute=True,
+            )
+
+            # Ensure that we are within an ELF note
+            if (
+                elf_note.n_namesz != len(linux_constants.VMCOREINFO_MAGIC)
+                or elf_note.n_type != 0
+                or elf_note.n_descsz == 0
+            ):
+                continue
+
+            vmcoreinfo_data_offset = vmcoreinfo_offset + len(
+                linux_constants.VMCOREINFO_MAGIC_ALIGNED
+            )
+
+            # Also, confirm this with the first tag, which has consistently been OSRELEASE
+            vmcoreinfo_data = layer.read(vmcoreinfo_data_offset, elf_note.n_descsz)
+            if not vmcoreinfo_data.startswith(linux_constants.OSRELEASE_TAG):
+                continue
+
+            table = cls._vmcoreinfo_data_to_dict(vmcoreinfo_data)
+            if not table:
+                # Wrong VMCoreInfo note offset, keep trying
+                continue
+
+            # A valid VMCoreInfo ELF note exists at 'vmcoreinfo_elf_note_offset'
+            yield vmcoreinfo_elf_note_offset, table
