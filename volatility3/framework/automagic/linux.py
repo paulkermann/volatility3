@@ -229,7 +229,6 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
             if phys_base_str is None:
                 # We are in kernel (x86) < 4.10 401721ecd1dcb0a428aa5d6832ee05ffbdbffbbe where it was SYMBOL(phys_base)
                 # It's the symbol address instead of the value itself, which is useless for calculating the physical address.
-                # raise Exception("Kernel < 4.10")
                 continue
 
             kerneloffset_str = vmcoreinfo.get("KERNELOFFSET")
