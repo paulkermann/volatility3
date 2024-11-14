@@ -122,7 +122,7 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
         return None
 
     @classmethod
-    def find_aslr_classic(
+    def find_aslr(
         cls,
         context: interfaces.context.ContextInterface,
         symbol_table: str,
@@ -198,100 +198,13 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
         vollog.debug("Scanners could not determine any ASLR shifts, using 0 for both")
         return 0, 0
 
-    @classmethod
-    def find_aslr_vmcoreinfo(
-        cls,
-        context: interfaces.context.ContextInterface,
-        layer_name: str,
-        progress_callback: constants.ProgressCallback = None,
-    ) -> Optional[Tuple[int, int]]:
-        """Determines the ASLR offsets using the VMCOREINFO ELF note
-
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The layer within the context in which the module exists
-            progress_callback: A function that takes a percentage (and an optional description) that will be called periodically
-
-        Returns:
-            kaslr_shirt and aslr_shift
-        """
-
-        for (
-            _vmcoreinfo_offset,
-            vmcoreinfo,
-        ) in linux.VMCoreInfo.search_vmcoreinfo_elf_note(
-            context=context,
-            layer_name=layer_name,
-            progress_callback=progress_callback,
-        ):
-
-            phys_base_str = vmcoreinfo.get("NUMBER(phys_base)")
-            if phys_base_str is None:
-                # We are in kernel (x86) < 4.10 401721ecd1dcb0a428aa5d6832ee05ffbdbffbbe where it was SYMBOL(phys_base)
-                # It's the symbol address instead of the value itself, which is useless for calculating the physical address.
-                continue
-
-            kerneloffset_str = vmcoreinfo.get("KERNELOFFSET")
-            if kerneloffset_str is None:
-                # KERNELOFFSET: (x86)   kernels < 3.13 b6085a865762236bb84934161273cdac6dd11c2d
-                continue
-
-            aslr_shift = int(kerneloffset_str, 16)
-            kaslr_shift = int(phys_base_str) + aslr_shift
-
-            vollog.debug(
-                "Linux ASLR shift values found in VMCOREINFO ELF note: physical 0x%x virtual 0x%x",
-                kaslr_shift,
-                aslr_shift,
-            )
-
-            return kaslr_shift, aslr_shift
-
-        vollog.debug("The vmcoreinfo scanner could not determine any ASLR shifts")
-        return None
-
-    @classmethod
-    def virtual_to_physical_address(cls, addr: int) -> int:
+    @staticmethod
+    def virtual_to_physical_address(addr: int) -> int:
         """Converts a virtual linux address to a physical one (does not account
         of ASLR)"""
         if addr > 0xFFFFFFFF80000000:
             return addr - 0xFFFFFFFF80000000
         return addr - 0xC0000000
-
-    @classmethod
-    def find_aslr(
-        cls,
-        context: interfaces.context.ContextInterface,
-        symbol_table: str,
-        layer_name: str,
-        progress_callback: constants.ProgressCallback = None,
-    ) -> Tuple[int, int]:
-        """Determines the offset of the actual DTB in physical space and its
-        symbol offset.
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            symbol_table: The name of the kernel module on which to operate
-            layer_name: The layer within the context in which the module exists
-            progress_callback: A function that takes a percentage (and an optional description) that will be called periodically
-
-        Returns:
-            kaslr_shirt and aslr_shift
-        """
-
-        aslr_shifts = cls.find_aslr_vmcoreinfo(
-            context, layer_name, progress_callback=progress_callback
-        )
-        if aslr_shifts:
-            kaslr_shift, aslr_shift = aslr_shifts
-        else:
-            # Fallback to the traditional scanner method
-            kaslr_shift, aslr_shift = cls.find_aslr_classic(
-                context,
-                symbol_table,
-                layer_name,
-                progress_callback=progress_callback,
-            )
-        return kaslr_shift, aslr_shift
 
 
 class LinuxSymbolFinder(symbol_finder.SymbolFinder):
@@ -302,3 +215,212 @@ class LinuxSymbolFinder(symbol_finder.SymbolFinder):
     symbol_class = "volatility3.framework.symbols.linux.LinuxKernelIntermedSymbols"
     find_aslr = lambda cls, *args: LinuxIntelStacker.find_aslr(*args)[1]
     exclusion_list = ["mac", "windows"]
+
+
+class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
+    stack_order = 34
+    exclusion_list = ["mac", "windows"]
+
+    @staticmethod
+    def _check_versions() -> bool:
+        """Verify the versions of the required modules"""
+
+        # Check SQlite cache version
+        sqlitecache_version_required = (1, 0, 0)
+        if not requirements.VersionRequirement.matches_required(
+            sqlitecache_version_required, symbol_cache.SqliteCache.version
+        ):
+            vollog.info(
+                "SQLiteCache version not suitable: required %s found %s",
+                sqlitecache_version_required,
+                symbol_cache.SqliteCache.version,
+            )
+            return False
+
+        # Check VMCOREINFO API version
+        vmcoreinfo_version_required = (1, 0, 0)
+        if not requirements.VersionRequirement.matches_required(
+            vmcoreinfo_version_required, linux.VMCoreInfo._version
+        ):
+            vollog.info(
+                "VMCOREINFO version not suitable: required %s found %s",
+                vmcoreinfo_version_required,
+                linux.VMCoreInfo._version,
+            )
+            return False
+
+        return True
+
+    @classmethod
+    def stack(
+        cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
+        progress_callback: constants.ProgressCallback = None,
+    ) -> Optional[interfaces.layers.DataLayerInterface]:
+        """Attempts to identify linux within this layer."""
+
+        # Verify the versions of the required modules
+        if not cls._check_versions():
+            return None
+
+        # Bail out by default unless we can stack properly
+        layer = context.layers[layer_name]
+
+        # Never stack on top of an intel layer
+        # FIXME: Find a way to improve this check
+        if isinstance(layer, intel.Intel):
+            return None
+
+        identifiers_path = os.path.join(
+            constants.CACHE_PATH, constants.IDENTIFIERS_FILENAME
+        )
+        sqlite_cache = symbol_cache.SqliteCache(identifiers_path)
+        linux_banners = sqlite_cache.get_identifier_dictionary(operating_system="linux")
+        if not linux_banners:
+            # If we have no banners, don't bother scanning
+            vollog.info(
+                "No Linux banners found - if this is a linux plugin, please check your "
+                "symbol files location"
+            )
+            return None
+
+        vmcoreinfo_elf_notes_iter = linux.VMCoreInfo.search_vmcoreinfo_elf_note(
+            context=context,
+            layer_name=layer_name,
+            progress_callback=progress_callback,
+        )
+
+        # Iterate through each VMCOREINFO ELF note found, using the first one that is valid.
+        for _vmcoreinfo_offset, vmcoreinfo in vmcoreinfo_elf_notes_iter:
+            shifts = cls._vmcoreinfo_find_aslr(vmcoreinfo)
+            if not shifts:
+                # Let's try the next vmcoreinfo, in case this one isn't correct.
+                continue
+
+            kaslr_shift, aslr_shift = shifts
+
+            dtb = cls._vmcoreinfo_get_dtb(vmcoreinfo, aslr_shift, kaslr_shift)
+
+            is_32bit, is_pae = cls._vmcoreinfo_is_32bit(vmcoreinfo)
+            if is_32bit:
+                layer_class = intel.IntelPAE if is_pae else intel.Intel
+            else:
+                layer_class = intel.Intel32e
+
+            uts_release = vmcoreinfo["OSRELEASE"]
+
+            # See how linux_banner constant is built in the linux kernel
+            linux_version_prefix = f"Linux version {uts_release} (".encode()
+            valid_banners = [
+                x for x in linux_banners if x and x.startswith(linux_version_prefix)
+            ]
+            if not valid_banners:
+                # There's no banner matching this VMCOREINFO, keep trying with the next one
+                continue
+
+            join = interfaces.configuration.path_join
+            mss = scanners.MultiStringScanner(valid_banners)
+            for _, banner in layer.scan(
+                context=context, scanner=mss, progress_callback=progress_callback
+            ):
+                isf_path = linux_banners.get(banner, None)
+                if not isf_path:
+                    vollog.warning(
+                        "Identified banner %r, but no matching ISF is available.",
+                        banner,
+                    )
+                    continue
+
+                vollog.debug("Identified banner: %r", banner)
+                table_name = context.symbol_space.free_table_name("LintelStacker")
+                table = linux.LinuxKernelIntermedSymbols(
+                    context,
+                    f"temporary.{table_name}",
+                    name=table_name,
+                    isf_url=isf_path,
+                )
+                context.symbol_space.append(table)
+
+                # Build the new layer
+                new_layer_name = context.layers.free_layer_name("IntelLayer")
+                config_path = join("IntelHelper", new_layer_name)
+                kernel_banner = LinuxSymbolFinder.banner_config_key
+                banner_str = banner.decode(encoding="latin-1")
+                context.config[join(config_path, "memory_layer")] = layer_name
+                context.config[join(config_path, "page_map_offset")] = dtb
+                context.config[join(config_path, kernel_banner)] = banner_str
+                layer = layer_class(
+                    context,
+                    config_path=config_path,
+                    name=new_layer_name,
+                    metadata={"os": "Linux"},
+                )
+                layer.config["kernel_virtual_offset"] = aslr_shift
+
+                if layer and dtb:
+                    vollog.debug(
+                        "Values found in VMCOREINFO: KASLR=0x%x, ASLR=0x%x, DTB=0x%x",
+                        kaslr_shift,
+                        aslr_shift,
+                        dtb,
+                    )
+
+                return layer
+
+        vollog.debug("No suitable linux banner could be matched")
+        return None
+
+    @staticmethod
+    def _vmcoreinfo_find_aslr(vmcoreinfo) -> Tuple[int, int]:
+        phys_base_str = vmcoreinfo.get("NUMBER(phys_base)")
+        if phys_base_str is None:
+            # In kernel < 4.10, there may be a SYMBOL(phys_base), but as noted in the
+            # c401721ecd1dcb0a428aa5d6832ee05ffbdbffbbe commit comment, this value
+            # isn't useful for calculating the physical address.
+            # There's nothing we can do here, so let's try with the next VMCOREINFO or
+            # the next Stacker.
+            return None
+
+        # kernels 3.14 (b6085a865762236bb84934161273cdac6dd11c2d) KERNELOFFSET was added
+        kerneloffset_str = vmcoreinfo.get("KERNELOFFSET")
+        if kerneloffset_str is None:
+            # kernels < 3.14 if KERNELOFFSET is missing, KASLR might not be implemented.
+            # Oddly, NUMBER(phys_base) is present without it. To be safe, proceed only
+            # if both are present.
+            return None
+
+        aslr_shift = int(kerneloffset_str, 16)
+        kaslr_shift = int(phys_base_str) + aslr_shift
+
+        return kaslr_shift, aslr_shift
+
+    @staticmethod
+    def _vmcoreinfo_get_dtb(vmcoreinfo, aslr_shift, kaslr_shift) -> int:
+        """Returns the page global directory address physical (a.k.a DTB or PGD)"""
+        # In x86-64, since kernels 2.5.22 swapper_pg_dir is a macro to the respective pgd.
+        # First, in e3ebadd95cb621e2c7436f3d3646447ac9d5c16d to init_level4_pgt, and later
+        # in kernels 4.13 in 65ade2f872b474fa8a04c2d397783350326634e6) to init_top_pgt.
+        # In x86-32, the pgd is swapper_pg_dir. So, in any case, for VMCOREINFO
+        # SYMBOL(swapper_pg_dir) will always have the right value.
+        dtb_vaddr = int(vmcoreinfo["SYMBOL(swapper_pg_dir)"], 16)
+        dtb_paddr = (
+            LinuxIntelStacker.virtual_to_physical_address(dtb_vaddr)
+            - aslr_shift
+            + kaslr_shift
+        )
+
+        return dtb_paddr
+
+    @staticmethod
+    def _vmcoreinfo_is_32bit(vmcoreinfo) -> Tuple[bool, bool]:
+        """Returns a tuple of booleans with is_32bit and is_pae values"""
+        is_pae = vmcoreinfo.get("CONFIG_X86_PAE", "n") == "y"
+        if is_pae:
+            is_32bit = True
+        else:
+            # Check the swapper_pg_dir virtual address size
+            dtb_vaddr = int(vmcoreinfo["SYMBOL(swapper_pg_dir)"], 16)
+            is_32bit = dtb_vaddr <= 2**32
+
+        return is_32bit, is_pae
