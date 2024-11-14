@@ -347,16 +347,16 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
                 config_path = join("IntelHelper", new_layer_name)
                 kernel_banner = LinuxSymbolFinder.banner_config_key
                 banner_str = banner.decode(encoding="latin-1")
+                context.config[join(config_path, kernel_banner)] = banner_str
                 context.config[join(config_path, "memory_layer")] = layer_name
                 context.config[join(config_path, "page_map_offset")] = dtb
-                context.config[join(config_path, kernel_banner)] = banner_str
+                context.config[join(config_path, "kernel_virtual_offset")] = aslr_shift
                 layer = layer_class(
                     context,
                     config_path=config_path,
                     name=new_layer_name,
                     metadata={"os": "Linux"},
                 )
-                layer.config["kernel_virtual_offset"] = aslr_shift
 
                 if layer and dtb:
                     vollog.debug(
