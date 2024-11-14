@@ -397,7 +397,7 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
 
     @staticmethod
     def _vmcoreinfo_get_dtb(vmcoreinfo, aslr_shift, kaslr_shift) -> int:
-        """Returns the page global directory address physical (a.k.a DTB or PGD)"""
+        """Returns the page global directory physical address (a.k.a DTB or PGD)"""
         # In x86-64, since kernels 2.5.22 swapper_pg_dir is a macro to the respective pgd.
         # First, in e3ebadd95cb621e2c7436f3d3646447ac9d5c16d to init_level4_pgt, and later
         # in kernels 4.13 in 65ade2f872b474fa8a04c2d397783350326634e6) to init_top_pgt.
