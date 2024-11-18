@@ -295,12 +295,15 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
         for _vmcoreinfo_offset, vmcoreinfo in vmcoreinfo_elf_notes_iter:
             shifts = cls._vmcoreinfo_find_aslr(vmcoreinfo)
             if not shifts:
-                # Let's try the next vmcoreinfo, in case this one isn't correct.
+                # Let's try the next VMCOREINFO, in case this one isn't correct.
                 continue
 
             kaslr_shift, aslr_shift = shifts
 
             dtb = cls._vmcoreinfo_get_dtb(vmcoreinfo, aslr_shift, kaslr_shift)
+            if dtb is None:
+                # Discard this VMCOREINFO immediately
+                continue
 
             is_32bit, is_pae = cls._vmcoreinfo_is_32bit(vmcoreinfo)
             if is_32bit:
@@ -358,7 +361,7 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
                     metadata={"os": "Linux"},
                 )
 
-                if layer and dtb:
+                if layer:
                     vollog.debug(
                         "Values found in VMCOREINFO: KASLR=0x%x, ASLR=0x%x, DTB=0x%x",
                         kaslr_shift,
