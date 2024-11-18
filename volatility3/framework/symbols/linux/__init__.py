@@ -869,9 +869,9 @@ class VMCoreInfo(interfaces.configuration.VersionableInterface):
         if key.startswith("SYMBOL(") or key == "KERNELOFFSET":
             return int(value, 16)
         elif key.startswith(("NUMBER(", "LENGTH(", "SIZE(", "OFFSET(")):
-            return int(value)
+            return int(value, 0)
         elif key == "PAGESIZE":
-            return int(value)
+            return int(value, 0)
 
         # Default, as string
         return value
