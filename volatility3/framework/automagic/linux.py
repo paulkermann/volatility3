@@ -366,7 +366,7 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
                         dtb,
                     )
 
-                return layer
+                    return layer
 
         vollog.debug("No suitable linux banner could be matched")
         return None
