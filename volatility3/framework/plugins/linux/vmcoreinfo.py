@@ -38,6 +38,11 @@ class VMCoreInfo(plugins.PluginInterface):
             layer_name=layer_name,
         ):
             for key, value in vmcoreinfo.items():
+                if key.startswith("SYMBOL(") or key == "KERNELOFFSET":
+                    value = f"0x{value:x}"
+                else:
+                    value = str(value)
+
                 yield 0, (format_hints.Hex(vmcoreinfo_offset), key, value)
 
     def run(self):

@@ -842,8 +842,9 @@ class VMCoreInfo(interfaces.configuration.VersionableInterface):
 
     _version = (1, 0, 0)
 
-    @staticmethod
+    @classmethod
     def _vmcoreinfo_data_to_dict(
+        cls,
         vmcoreinfo_data,
     ) -> Optional[Dict[str, str]]:
         """Converts the input VMCoreInfo data buffer into a dictionary"""
@@ -859,9 +860,21 @@ class VMCoreInfo(interfaces.configuration.VersionableInterface):
                 break
 
             key, value = line.split("=", 1)
-            vmcoreinfo_dict[key] = value
+            vmcoreinfo_dict[key] = cls._parse_value(key, value)
 
         return vmcoreinfo_dict
+
+    @classmethod
+    def _parse_value(cls, key, value):
+        if key.startswith("SYMBOL(") or key == "KERNELOFFSET":
+            return int(value, 16)
+        elif key.startswith(("NUMBER(", "LENGTH(", "SIZE(", "OFFSET(")):
+            return int(value)
+        elif key == "PAGESIZE":
+            return int(value)
+
+        # Default, as string
+        return value
 
     @classmethod
     def search_vmcoreinfo_elf_note(
