@@ -379,8 +379,8 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
                         aslr_shift,
                         dtb,
                     )
-                    # Add the vmcoreinfo dict to the layer metadata
-                    layer._direct_metadata = collections.ChainMap(
+                    # Add the vmcoreinfo dict to the layer class metadata
+                    layer.__class__._direct_metadata = collections.ChainMap(
                         {"vmcoreinfo": vmcoreinfo}, layer._direct_metadata
                     )
 
