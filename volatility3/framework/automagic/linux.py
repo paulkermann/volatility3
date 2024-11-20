@@ -4,7 +4,6 @@
 
 import os
 import logging
-import collections
 from typing import Optional, Tuple, Type
 
 from volatility3.framework import constants, interfaces
@@ -108,13 +107,11 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
                     join(config_path, LinuxSymbolFinder.banner_config_key)
                 ] = str(banner, "latin-1")
 
-                # Set an empty vmcoreinfo entry to prevent using the wrong one in the layer stack.
-                layer_metadata = dict(os="Linux", vmcoreinfo={})
                 layer = layer_class(
                     context,
                     config_path=config_path,
                     name=new_layer_name,
-                    metadata=layer_metadata,
+                    metadata={os: "Linux"},
                 )
                 layer.config["kernel_virtual_offset"] = aslr_shift
 
@@ -378,10 +375,6 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
                         kaslr_shift,
                         aslr_shift,
                         dtb,
-                    )
-                    # Add the vmcoreinfo dict to the layer class metadata
-                    layer.__class__._direct_metadata = collections.ChainMap(
-                        {"vmcoreinfo": vmcoreinfo}, layer._direct_metadata
                     )
 
                     return layer
