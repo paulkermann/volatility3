@@ -111,7 +111,7 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
                     context,
                     config_path=config_path,
                     name=new_layer_name,
-                    metadata={os: "Linux"},
+                    metadata={"os": "Linux"},
                 )
                 layer.config["kernel_virtual_offset"] = aslr_shift
 
