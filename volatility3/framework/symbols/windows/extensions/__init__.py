@@ -269,7 +269,10 @@ class MMVAD_SHORT(objects.StructType):
             return self.u.VadFlags.CommitCharge
 
         elif self.has_member("Core"):
-            return self.Core.u1.VadFlags1.CommitCharge
+            if self.Core.has_member("CommitCharge"):
+                return self.Core.CommitCharge
+            else:
+                return self.Core.u1.VadFlags1.CommitCharge
 
         raise AttributeError("Unable to find the commit charge member")
 
