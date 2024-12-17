@@ -295,6 +295,7 @@ class ModuleInterface(interfaces.configuration.ConfigurableInterface):
     def has_enumeration(self, name: str) -> bool:
         """Determines whether an enumeration is present in the module's symbol table."""
 
+    @property
     def symbols(self) -> List:
         """Lists the symbols contained in the symbol table for this module"""
 
