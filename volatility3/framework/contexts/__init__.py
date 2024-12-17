@@ -11,7 +11,7 @@ without them interfering with each other.
 import functools
 import hashlib
 import logging
-from typing import Callable, Iterable, List, Optional, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from volatility3.framework import constants, interfaces, symbols, exceptions
 from volatility3.framework.objects import templates
@@ -386,10 +386,9 @@ class ModuleCollection(interfaces.context.ModuleContainer):
     """Class to contain a collection of SizedModules and reason about their
     contents."""
 
-    def __init__(
-        self, modules: Optional[List[interfaces.context.ModuleInterface]] = None
-    ) -> None:
+    def __init__(self, modules: Optional[List[SizedModule]] = None) -> None:
         self._prefix_count = {}
+        self._modules: Dict[str, SizedModule] = {}
         super().__init__(modules)
 
     def deduplicate(self) -> "ModuleCollection":
@@ -402,9 +401,9 @@ class ModuleCollection(interfaces.context.ModuleContainer):
         new_modules = []
         seen: Set[str] = set()
         for mod in self._modules:
-            if mod.hash not in seen or mod.size == 0:
+            if self._modules[mod].hash not in seen or self._modules[mod].size == 0:
                 new_modules.append(mod)
-                seen.add(mod.hash)  # type: ignore # FIXME: mypy #5107
+                seen.add(self._modules[mod].hash)
         return ModuleCollection(new_modules)
 
     def free_module_name(self, prefix: str = "module") -> str:
