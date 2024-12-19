@@ -224,19 +224,6 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
     @staticmethod
     def _check_versions() -> bool:
         """Verify the versions of the required modules"""
-
-        # Check SQlite cache version
-        sqlitecache_version_required = (1, 0, 0)
-        if not requirements.VersionRequirement.matches_required(
-            sqlitecache_version_required, symbol_cache.SqliteCache.version
-        ):
-            vollog.info(
-                "SQLiteCache version not suitable: required %s found %s",
-                sqlitecache_version_required,
-                symbol_cache.SqliteCache.version,
-            )
-            return False
-
         # Check VMCOREINFO API version
         vmcoreinfo_version_required = (1, 0, 0)
         if not requirements.VersionRequirement.matches_required(
@@ -272,11 +259,9 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
         if isinstance(layer, intel.Intel):
             return None
 
-        identifiers_path = os.path.join(
-            constants.CACHE_PATH, constants.IDENTIFIERS_FILENAME
+        linux_banners = symbol_cache.load_cache_manager().get_identifier_dictionary(
+            operating_system="linux"
         )
-        sqlite_cache = symbol_cache.SqliteCache(identifiers_path)
-        linux_banners = sqlite_cache.get_identifier_dictionary(operating_system="linux")
         if not linux_banners:
             # If we have no banners, don't bother scanning
             vollog.info(
