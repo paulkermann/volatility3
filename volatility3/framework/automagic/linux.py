@@ -226,12 +226,12 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
         # Check VMCOREINFO API version
         vmcoreinfo_version_required = (1, 0, 0)
         if not requirements.VersionRequirement.matches_required(
-            vmcoreinfo_version_required, linux.VMCoreInfo._version
+            vmcoreinfo_version_required, linux.VMCoreInfo.version
         ):
             vollog.info(
                 "VMCOREINFO version not suitable: required %s found %s",
                 vmcoreinfo_version_required,
-                linux.VMCoreInfo._version,
+                linux.VMCoreInfo.version,
             )
             return False
 
