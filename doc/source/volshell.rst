@@ -144,12 +144,12 @@ We can provide arguments via the `dpo` method call:
     356	4	smss.exe	0x8c0bccf8d040	3	-	N/A	False	2021-03-13 17:25:33.000000 	N/A	Disabled
     ...
 
-Here's we've provided the kernel name that was requested by the volshell plugin itself (the generic volshell does not
+Here we've provided the kernel name that was requested by the volshell plugin itself (the generic volshell does not
 load a kernel module, and instead only has a TranslationLayerRequirement).
 A different module could be created and provided instead.  The context used
 by the `dpo` method is always `context`.
 
-Instead of print the results directly to screen, they can be gathered into a TreeGrid objects for direct access by
+Instead of printing the results directly to screen, they can be gathered into a TreeGrid objects for direct access by
 using the `generate_treegrid` or `gt` command.
 
 ::

@@ -237,7 +237,7 @@ class vm_map_entry(objects.StructType):
     def get_path(self, context, config_prefix):
         node = self.get_vnode(context, config_prefix)
 
-        if type(node) == str and node == "sub_map":
+        if type(node) is str and node == "sub_map":
             ret = node
         elif node:
             path = []

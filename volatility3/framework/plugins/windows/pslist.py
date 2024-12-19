@@ -126,15 +126,24 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
+
+        def filter_func(_):
+            return False
+
         # FIXME: mypy #4973 or #2608
         pid_list = pid_list or []
         filter_list = [x for x in pid_list if x is not None]
         if filter_list:
             if exclude:
-                filter_func = lambda x: x.UniqueProcessId in filter_list
+
+                def filter_func(x):
+                    return x.UniqueProcessId in filter_list
+
             else:
-                filter_func = lambda x: x.UniqueProcessId not in filter_list
+
+                def filter_func(x):
+                    return x.UniqueProcessId not in filter_list
+
         return filter_func
 
     @classmethod
@@ -173,20 +182,24 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
+
+        def filter_func(_):
+            return False
+
         # FIXME: mypy #4973 or #2608
         name_list = name_list or []
         filter_list = [x for x in name_list if x is not None]
         if filter_list:
             if exclude:
-                filter_func = (
-                    lambda x: utility.array_to_string(x.ImageFileName) in filter_list
-                )
+
+                def filter_func(x):
+                    return utility.array_to_string(x.ImageFileName) in filter_list
+
             else:
-                filter_func = (
-                    lambda x: utility.array_to_string(x.ImageFileName)
-                    not in filter_list
-                )
+
+                def filter_func(x):
+                    return utility.array_to_string(x.ImageFileName) not in filter_list
+
         return filter_func
 
     @classmethod

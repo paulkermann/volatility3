@@ -749,11 +749,10 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
 
         try:
             peb = self.get_peb()
-            for entry in peb.Ldr.InLoadOrderModuleList.to_list(
+            yield from peb.Ldr.InLoadOrderModuleList.to_list(
                 f"{self.get_symbol_table_name()}{constants.BANG}_LDR_DATA_TABLE_ENTRY",
                 "InLoadOrderLinks",
-            ):
-                yield entry
+            )
         except exceptions.InvalidAddressException:
             return None
 
@@ -762,11 +761,10 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
 
         try:
             peb = self.get_peb()
-            for entry in peb.Ldr.InInitializationOrderModuleList.to_list(
+            yield from peb.Ldr.InInitializationOrderModuleList.to_list(
                 f"{self.get_symbol_table_name()}{constants.BANG}_LDR_DATA_TABLE_ENTRY",
                 "InInitializationOrderLinks",
-            ):
-                yield entry
+            )
         except exceptions.InvalidAddressException:
             return None
 
@@ -775,11 +773,10 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
 
         try:
             peb = self.get_peb()
-            for entry in peb.Ldr.InMemoryOrderModuleList.to_list(
+            yield from peb.Ldr.InMemoryOrderModuleList.to_list(
                 f"{self.get_symbol_table_name()}{constants.BANG}_LDR_DATA_TABLE_ENTRY",
                 "InMemoryOrderLinks",
-            ):
-                yield entry
+            )
         except exceptions.InvalidAddressException:
             return None
 
@@ -797,7 +794,7 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
 
         return renderers.UnreadableValue()
 
-    def get_session_id(self):
+    def get_session_id(self) -> Union[int, interfaces.renderers.BaseAbsentValue]:
         try:
             if self.has_member("Session"):
                 if self.Session == 0:
@@ -813,12 +810,30 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
                     offset=kvo,
                     native_layer_name=self.vol.native_layer_name,
                 )
-                session = ntkrnlmp.object(
-                    object_type="_MM_SESSION_SPACE", offset=self.Session, absolute=True
-                )
-
-                if session.has_member("SessionId"):
-                    return session.SessionId
+                try:
+                    session = ntkrnlmp.object(
+                        object_type="_MM_SESSION_SPACE",
+                        offset=self.Session,
+                        absolute=True,
+                    )
+                    if session.has_member("SessionId"):
+                        return session.SessionId
+                except exceptions.SymbolError:
+                    # In Windows 11 24H2, the _MM_SESSION_SPACE type was
+                    # replaced with _PSP_SESSION_SPACE, and the kernel PDB
+                    # doesn't contain information about its members (otherwise,
+                    # we would just fall back to the new type). However, it
+                    # appears to be, for our purposes, functionally identical
+                    # to the _MM_SESSION_SPACE. Because _MM_SESSION_SPACE
+                    # stores its session ID at offset 8 as an unsigned long, we
+                    # create an unsigned long at that offset and use that
+                    # instead.
+                    session_id = ntkrnlmp.object(
+                        object_type="unsigned long",
+                        offset=self.Session + 8,
+                        absolute=True,
+                    )
+                    return session_id
 
         except exceptions.InvalidAddressException:
             vollog.log(
@@ -1076,7 +1091,7 @@ class KTIMER(objects.StructType):
         return self.Header.Type in self.VALID_TYPES
 
     def get_due_time(self):
-        return "{0:#010x}:{1:#010x}".format(self.DueTime.HighPart, self.DueTime.LowPart)
+        return f"{self.DueTime.HighPart:#010x}:{self.DueTime.LowPart:#010x}"
 
     def get_dpc(self):
         """Return Dpc, and if Windows 7 or later, decode it"""
@@ -1383,7 +1398,7 @@ class SHARED_CACHE_MAP(objects.StructType):
         )
 
         # Iterate through the entries
-        for counter in range(0, self.VACB_ARRAY):
+        for counter in range(self.VACB_ARRAY):
             # Check if the VACB entry is in use
             if not vacb_array[counter]:
                 continue
@@ -1467,7 +1482,7 @@ class SHARED_CACHE_MAP(objects.StructType):
 
         if not section_size > self.VACB_SIZE_OF_FIRST_LEVEL:
             array_head = vacb_obj
-            for counter in range(0, full_blocks):
+            for counter in range(full_blocks):
                 vacb_entry = self._context.object(
                     symbol_table_name + constants.BANG + "pointer",
                     layer_name=self.vol.layer_name,
@@ -1526,7 +1541,7 @@ class SHARED_CACHE_MAP(objects.StructType):
 
             # Walk the array and if any entry points to the shared cache map object then we extract it.
             # Otherwise, if it is non-zero, then traverse to the next level.
-            for counter in range(0, self.VACB_ARRAY):
+            for counter in range(self.VACB_ARRAY):
                 if not vacb_array[counter]:
                     continue
 

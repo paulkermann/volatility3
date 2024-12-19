@@ -5,9 +5,9 @@ import contextlib
 import datetime
 import logging
 import re
-from typing import List, Optional, Type
+from typing import List
 
-from volatility3.framework import constants, exceptions, interfaces, renderers
+from volatility3.framework import exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import conversion, format_hints
 from volatility3.framework.symbols import intermed
@@ -199,16 +199,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             _depth, row_data = row
             if not isinstance(row_data[6], datetime.datetime):
                 continue
-            description = (
-                "DLL Load: Process {} {} Loaded {} ({}) Size {} Offset {}".format(
-                    row_data[0],
-                    row_data[1],
-                    row_data[4],
-                    row_data[5],
-                    row_data[3],
-                    row_data[2],
-                )
-            )
+            description = f"DLL Load: Process {row_data[0]} {row_data[1]} Loaded {row_data[4]} ({row_data[5]}) Size {row_data[3]} Offset {row_data[2]}"
             yield (description, timeliner.TimeLinerType.CREATED, row_data[6])
 
     def run(self):

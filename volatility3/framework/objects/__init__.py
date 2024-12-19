@@ -35,13 +35,13 @@ def convert_data_to_value(
     data_format: DataFormatInfo,
 ) -> TUnion[int, float, bytes, str, bool]:
     """Converts a series of bytes to a particular type of value."""
-    if struct_type == int:
+    if struct_type is int:
         return int.from_bytes(
             data, byteorder=data_format.byteorder, signed=data_format.signed
         )
-    if struct_type == bool:
+    if struct_type is bool:
         struct_format = "?"
-    elif struct_type == float:
+    elif struct_type is float:
         float_vals = "zzezfzzzd"
         if (
             data_format.length > len(float_vals)
@@ -70,7 +70,7 @@ def convert_value_to_data(
             f"Written value is not of the correct type for {struct_type.__name__}"
         )
 
-    if struct_type == int and isinstance(value, int):
+    if struct_type is int and isinstance(value, int):
         # Doubling up on the isinstance is for mypy
         return int.to_bytes(
             value,
@@ -78,9 +78,9 @@ def convert_value_to_data(
             byteorder=data_format.byteorder,
             signed=data_format.signed,
         )
-    if struct_type == bool:
+    if struct_type is bool:
         struct_format = "?"
-    elif struct_type == float:
+    elif struct_type is float:
         float_vals = "zzezfzzzd"
         if (
             data_format.length > len(float_vals)

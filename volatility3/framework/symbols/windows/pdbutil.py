@@ -94,7 +94,7 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
         if not requirements.VersionRequirement.matches_required(
             (1, 0, 0), symbol_cache.SqliteCache.version
         ):
-            vollog.debug(f"Required version of SQLiteCache not found")
+            vollog.debug("Required version of SQLiteCache not found")
             return None
 
         identifiers_path = os.path.join(
@@ -291,9 +291,7 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
                 break
             except PermissionError:
                 vollog.warning(
-                    "Cannot write necessary symbol file, please check permissions on {}".format(
-                        potential_output_filename
-                    )
+                    f"Cannot write necessary symbol file, please check permissions on {potential_output_filename}"
                 )
                 continue
             finally:

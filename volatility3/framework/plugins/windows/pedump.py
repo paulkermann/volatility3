@@ -77,7 +77,7 @@ class PEDump(interfaces.plugins.PluginInterface):
                 file_handle.seek(offset)
                 file_handle.write(data)
         except (
-            IOError,
+            OSError,
             exceptions.VolatilityException,
             OverflowError,
             ValueError,
@@ -119,12 +119,7 @@ class PEDump(interfaces.plugins.PluginInterface):
         if layer_name is None:
             layer_name = ldr_entry.vol.layer_name
 
-        file_name = "{}{}.{:#x}.{:#x}.dmp".format(
-            prefix,
-            ntpath.basename(name),
-            ldr_entry.vol.offset,
-            ldr_entry.DllBase,
-        )
+        file_name = f"{prefix}{ntpath.basename(name)}.{ldr_entry.vol.offset:#x}.{ldr_entry.DllBase:#x}.dmp"
 
         return cls.dump_pe(
             context,
@@ -146,11 +141,7 @@ class PEDump(interfaces.plugins.PluginInterface):
         pid: int,
         base: int,
     ) -> Optional[str]:
-        file_name = "PE.{:#x}.{:d}.{:#x}.dmp".format(
-            proc_offset,
-            pid,
-            base,
-        )
+        file_name = f"PE.{proc_offset:#x}.{pid:d}.{base:#x}.dmp"
 
         return PEDump.dump_pe(
             context, pe_table_name, layer_name, open_method, file_name, base
@@ -227,11 +218,11 @@ class PEDump(interfaces.plugins.PluginInterface):
         )
 
         if self.config["kernel_module"] and self.config["pid"]:
-            vollog.error("Only --kernel_module or --pid should be set. Not both")
+            vollog.error("Only 'kernel-module' or 'pid' should be set, not both")
             return
 
         if not self.config["kernel_module"] and not self.config["pid"]:
-            vollog.error("--kernel_module or --pid must be set")
+            vollog.error("Either 'kernel-module' or 'pid' argument must be set")
             return
 
         if self.config["kernel_module"]:

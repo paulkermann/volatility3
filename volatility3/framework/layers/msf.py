@@ -225,7 +225,7 @@ class PdbMSFStream(linear.LinearlyMappedLayer):
         returned = 0
         page_size = self._pdb_layer.page_size
         while length > 0:
-            page = math.floor((offset + returned) / page_size)
+            page = (offset + returned) // page_size
             page_position = (offset + returned) % page_size
             chunk_size = min(page_size - page_position, length)
             if page >= self._pages_len:

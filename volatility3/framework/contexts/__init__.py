@@ -356,7 +356,7 @@ class SizedModule(Module):
         return size or 0
 
     @property  # type: ignore # FIXME: mypy #5107
-    @functools.lru_cache()
+    @functools.lru_cache
     def hash(self) -> str:
         """Hashes the module for equality checks.
 

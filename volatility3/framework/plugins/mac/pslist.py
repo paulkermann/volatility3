@@ -83,7 +83,9 @@ class PsList(interfaces.plugins.PluginInterface):
 
     @classmethod
     def create_pid_filter(cls, pid_list: List[int] = None) -> Callable[[int], bool]:
-        filter_func = lambda _: False
+        def filter_func(_):
+            return False
+
         # FIXME: mypy #4973 or #2608
         pid_list = pid_list or []
         filter_list = [x for x in pid_list if x is not None]

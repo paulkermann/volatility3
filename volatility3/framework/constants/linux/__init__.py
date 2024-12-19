@@ -304,6 +304,7 @@ class ELF_CLASS(IntEnum):
     ELFCLASS64 = 2
 
 
+# PTrace
 PT_OPT_FLAG_SHIFT = 3
 
 PTRACE_EVENT_FORK = 1
@@ -339,6 +340,10 @@ class PT_FLAGS(Flag):
     def flags(self) -> str:
         """Returns the ptrace flags string"""
         return str(self).replace(self.__class__.__name__ + ".", "")
+
+
+# Boot time
+NSEC_PER_SEC = 1e9
 
 
 # Valid sizes for modules. Note that the Linux kernel does not define these values; they

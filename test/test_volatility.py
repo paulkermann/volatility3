@@ -14,6 +14,7 @@ import tempfile
 import hashlib
 import ntpath
 import json
+import contextlib
 
 #
 # HELPER FUNCTIONS
@@ -61,7 +62,7 @@ def runvol_plugin(plugin, img, volatility, python, pluginargs=[], globalargs=[])
 
 
 def test_windows_pslist(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.pslist.PsList", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.pslist.PsList", image, volatility, python)
     out = out.lower()
     assert out.find(b"system") != -1
     assert out.find(b"csrss.exe") != -1
@@ -69,7 +70,7 @@ def test_windows_pslist(image, volatility, python):
     assert out.count(b"\n") > 10
     assert rc == 0
 
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.pslist.PsList", image, volatility, python, pluginargs=["--pid", "4"]
     )
     out = out.lower()
@@ -79,7 +80,7 @@ def test_windows_pslist(image, volatility, python):
 
 
 def test_windows_psscan(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.psscan.PsScan", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.psscan.PsScan", image, volatility, python)
     out = out.lower()
     assert out.find(b"system") != -1
     assert out.find(b"csrss.exe") != -1
@@ -89,21 +90,21 @@ def test_windows_psscan(image, volatility, python):
 
 
 def test_windows_dlllist(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.dlllist.DllList", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.dlllist.DllList", image, volatility, python)
     out = out.lower()
     assert out.count(b"\n") > 10
     assert rc == 0
 
 
 def test_windows_modules(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.modules.Modules", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.modules.Modules", image, volatility, python)
     out = out.lower()
     assert out.count(b"\n") > 10
     assert rc == 0
 
 
 def test_windows_hivelist(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.registry.hivelist.HiveList", image, volatility, python
     )
     out = out.lower()
@@ -136,7 +137,7 @@ def test_windows_dumpfiles(image, volatility, python):
 
             path = tempfile.mkdtemp()
 
-            rc, out, err = runvol_plugin(
+            rc, _out, _err = runvol_plugin(
                 "windows.dumpfiles.DumpFiles",
                 image,
                 volatility,
@@ -166,7 +167,7 @@ def test_windows_dumpfiles(image, volatility, python):
 
 
 def test_windows_handles(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.handles.Handles", image, volatility, python, pluginargs=["--pid", "4"]
     )
 
@@ -183,7 +184,7 @@ def test_windows_handles(image, volatility, python):
 
 
 def test_windows_svcscan(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.svcscan.SvcScan", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.svcscan.SvcScan", image, volatility, python)
 
     assert out.find(b"Microsoft ACPI Driver") != -1
     assert out.count(b"\n") > 250
@@ -191,17 +192,19 @@ def test_windows_svcscan(image, volatility, python):
 
 
 def test_windows_thrdscan(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.thrdscan.ThrdScan", image, volatility, python)
+    rc, out, _err = runvol_plugin(
+        "windows.thrdscan.ThrdScan", image, volatility, python
+    )
     # find pid 4 (of system process) which starts with lowest tids
     assert out.find(b"\t4\t8") != -1
     assert out.find(b"\t4\t12") != -1
     assert out.find(b"\t4\t16") != -1
-    #assert out.find(b"this raieses AssertionError") != -1
+    # assert out.find(b"this raieses AssertionError") != -1
     assert rc == 0
 
 
 def test_windows_privileges(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.privileges.Privs", image, volatility, python, pluginargs=["--pid", "4"]
     )
 
@@ -213,7 +216,7 @@ def test_windows_privileges(image, volatility, python):
 
 
 def test_windows_getsids(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.getsids.GetSIDs", image, volatility, python, pluginargs=["--pid", "4"]
     )
 
@@ -225,7 +228,7 @@ def test_windows_getsids(image, volatility, python):
 
 
 def test_windows_envars(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.envars.Envars", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.envars.Envars", image, volatility, python)
 
     assert out.find(b"PATH") != -1
     assert out.find(b"PROCESSOR_ARCHITECTURE") != -1
@@ -237,7 +240,7 @@ def test_windows_envars(image, volatility, python):
 
 
 def test_windows_callbacks(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.callbacks.Callbacks", image, volatility, python
     )
 
@@ -249,7 +252,7 @@ def test_windows_callbacks(image, volatility, python):
 
 
 def test_windows_vadwalk(image, volatility, python):
-    rc, out, err = runvol_plugin("windows.vadwalk.VadWalk", image, volatility, python)
+    rc, out, _err = runvol_plugin("windows.vadwalk.VadWalk", image, volatility, python)
 
     assert out.find(b"Vad") != -1
     assert out.find(b"VadS") != -1
@@ -260,7 +263,7 @@ def test_windows_vadwalk(image, volatility, python):
 
 
 def test_windows_devicetree(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "windows.devicetree.DeviceTree", image, volatility, python
     )
 
@@ -273,117 +276,502 @@ def test_windows_devicetree(image, volatility, python):
     assert rc == 0
 
 
+def test_windows_vadyarascan_yara_rule(image, volatility, python):
+    yara_rule_01 = r"""
+        rule fullvadyarascan
+        {
+            strings:
+                $s1 = "!This program cannot be run in DOS mode."
+                $s2 = "Qw))Pw"
+                $s3 = "W_wD)Pw"
+                $s4 = "1Xw+2Xw"
+                $s5 = "xd`wh``w"
+                $s6 = "0g`w0g`w8g`w8g`w@g`w@g`wHg`wHg`wPg`wPg`wXg`wXg`w`g`w`g`whg`whg`wpg`wpg`wxg`wxg`w"
+            condition:
+                all of them
+        }
+    """
+
+    # FIXME: When the minimum Python version includes 3.12, replace the following with:
+    # with tempfile.NamedTemporaryFile(delete_on_close=False) as fd: ...
+    fd, filename = tempfile.mkstemp(suffix=".yar")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(yara_rule_01)
+
+        rc, out, _err = runvol_plugin(
+            "windows.vadyarascan.VadYaraScan",
+            image,
+            volatility,
+            python,
+            pluginargs=["--pid", "4012", "--yara-file", filename],
+        )
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(filename)
+
+    out = out.lower()
+    assert out.count(b"\n") > 4
+    assert rc == 0
+
+
+def test_windows_vadyarascan_yara_string(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "windows.vadyarascan.VadYaraScan",
+        image,
+        volatility,
+        python,
+        pluginargs=["--pid", "4012", "--yara-string", "MZ"],
+    )
+    out = out.lower()
+
+    assert out.count(b"\n") > 10
+    assert rc == 0
+
+
 # LINUX
 
 
 def test_linux_pslist(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.pslist.PsList", image, volatility, python)
-    out = out.lower()
+    rc, out, _err = runvol_plugin("linux.pslist.PsList", image, volatility, python)
 
+    assert rc == 0
+    out = out.lower()
     assert (out.find(b"init") != -1) or (out.find(b"systemd") != -1)
     assert out.find(b"watchdog") != -1
     assert out.count(b"\n") > 10
-    assert rc == 0
 
 
 def test_linux_check_idt(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.check_idt.Check_idt", image, volatility, python)
-    out = out.lower()
+    rc, out, _err = runvol_plugin(
+        "linux.check_idt.Check_idt", image, volatility, python
+    )
 
+    assert rc == 0
+    out = out.lower()
     assert out.count(b"__kernel__") >= 10
     assert out.count(b"\n") > 10
-    assert rc == 0
 
 
 def test_linux_check_syscall(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "linux.check_syscall.Check_syscall", image, volatility, python
     )
-    out = out.lower()
 
+    assert rc == 0
+    out = out.lower()
     assert out.find(b"sys_close") != -1
     assert out.find(b"sys_open") != -1
     assert out.count(b"\n") > 100
-    assert rc == 0
 
 
 def test_linux_lsmod(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.lsmod.Lsmod", image, volatility, python)
-    out = out.lower()
+    rc, out, _err = runvol_plugin("linux.lsmod.Lsmod", image, volatility, python)
 
-    assert out.count(b"\n") > 10
     assert rc == 0
+    out = out.lower()
+    assert out.count(b"\n") > 10
 
 
 def test_linux_lsof(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.lsof.Lsof", image, volatility, python)
-    out = out.lower()
+    rc, out, _err = runvol_plugin("linux.lsof.Lsof", image, volatility, python)
 
+    assert rc == 0
+    out = out.lower()
     assert out.count(b"socket:") >= 10
     assert out.count(b"\n") > 35
-    assert rc == 0
 
 
 def test_linux_proc_maps(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.proc.Maps", image, volatility, python)
-    out = out.lower()
+    rc, out, _err = runvol_plugin("linux.proc.Maps", image, volatility, python)
 
+    assert rc == 0
+    out = out.lower()
     assert out.count(b"anonymous mapping") >= 10
     assert out.count(b"\n") > 100
-    assert rc == 0
 
 
 def test_linux_tty_check(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.tty_check.tty_check", image, volatility, python)
-    out = out.lower()
+    rc, out, _err = runvol_plugin(
+        "linux.tty_check.tty_check", image, volatility, python
+    )
 
+    assert rc == 0
+    out = out.lower()
     assert out.find(b"__kernel__") != -1
     assert out.count(b"\n") >= 5
-    assert rc == 0
+
 
 def test_linux_sockstat(image, volatility, python):
-    rc, out, err = runvol_plugin("linux.sockstat.Sockstat", image, volatility, python)
+    rc, out, _err = runvol_plugin("linux.sockstat.Sockstat", image, volatility, python)
 
+    assert rc == 0
     assert out.count(b"AF_UNIX") >= 354
     assert out.count(b"AF_BLUETOOTH") >= 5
     assert out.count(b"AF_INET") >= 32
     assert out.count(b"AF_INET6") >= 20
     assert out.count(b"AF_PACKET") >= 1
     assert out.count(b"AF_NETLINK") >= 43
-    assert rc == 0
 
 
 def test_linux_library_list(image, volatility, python):
-    rc, out, err = runvol_plugin(
-        "linux.library_list.LibraryList", image, volatility, python
+    rc, out, _err = runvol_plugin(
+        "linux.library_list.LibraryList",
+        image,
+        volatility,
+        python,
+        pluginargs=["--pids", "2363"],
     )
 
+    assert rc == 0
     assert re.search(
         rb"NetworkManager\s2363\s0x7f52cdda0000\s/lib/x86_64-linux-gnu/libnss_files.so.2",
         out,
     )
-    assert re.search(
-        rb"gnome-settings-\s3807\s0x7f7e660b5000\s/lib/x86_64-linux-gnu/libbz2.so.1.0",
-        out,
+
+    assert out.count(b"\n") > 10
+
+
+def test_linux_pstree(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.pstree.PsTree", image, volatility, python)
+
+    assert rc == 0
+    out = out.lower()
+    assert (out.find(b"init") != -1) or (out.find(b"systemd") != -1)
+    assert out.count(b"\n") > 10
+
+
+def test_linux_pidhashtable(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.pidhashtable.PIDHashTable", image, volatility, python
     )
-    assert re.search(
-        rb"gdu-notificatio\s3878\s0x7f25ce33e000\s/usr/lib/x86_64-linux-gnu/libXau.so.6",
-        out,
+
+    assert rc == 0
+    out = out.lower()
+    assert (out.find(b"init") != -1) or (out.find(b"systemd") != -1)
+    assert out.count(b"\n") > 10
+
+
+def test_linux_bash(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.bash.Bash", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_boottime(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.boottime.Boottime", image, volatility, python)
+
+    assert rc == 0
+    out = out.lower()
+    assert out.count(b"utc") >= 1
+
+
+def test_linux_capabilities(image, volatility, python):
+    rc, out, err = runvol_plugin(
+        "linux.capabilities.Capabilities",
+        image,
+        volatility,
+        python,
+        globalargs=["-vvv"],
     )
+
+    if rc != 0 and err.count(b"Unsupported kernel capabilities implementation") > 0:
+        # The linux-sample-1.bin kernel implementation isn't supported.
+        # However, we can still check that the plugin requirements are met.
+        return None
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_check_creds(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.check_creds.Check_creds", image, volatility, python
+    )
+
+    # linux-sample-1.bin has no processes sharing credentials.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_elfs(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.elfs.Elfs", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_envars(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.envars.Envars", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_kthreads(image, volatility, python):
+    rc, out, err = runvol_plugin(
+        "linux.kthreads.Kthreads",
+        image,
+        volatility,
+        python,
+        globalargs=["-vvv"],
+    )
+
+    if rc != 0 and err.count(b"Unsupported kthread implementation") > 0:
+        # The linux-sample-1.bin kernel implementation isn't supported.
+        # However, we can still check that the plugin requirements are met.
+        return None
+
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_malfind(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.malfind.Malfind", image, volatility, python)
+
+    # linux-sample-1.bin has no process memory ranges with potential injected code.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_mountinfo(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.mountinfo.MountInfo", image, volatility, python
+    )
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_psaux(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.psaux.PsAux", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 50
+
+
+def test_linux_ptrace(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.ptrace.Ptrace", image, volatility, python)
+
+    # linux-sample-1.bin has no processes being ptraced.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_vmaregexscan(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.vmaregexscan.VmaRegExScan",
+        image,
+        volatility,
+        python,
+        pluginargs=["--pid", "1", "--pattern", "\\x7fELF"],
+    )
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_vmayarascan_yara_rule(image, volatility, python):
+    yara_rule_01 = r"""
+        rule fullvmayarascan
+        {
+            strings:
+                $s1 = "_nss_files_parse_grent"
+                $s2 = "/lib64/ld-linux-x86-64.so.2"
+                $s3 = "(bufferend - (char *) 0) % sizeof (char *) == 0"
+            condition:
+                all of them
+        }
+    """
+
+    # FIXME: When the minimum Python version includes 3.12, replace the following with:
+    # with tempfile.NamedTemporaryFile(delete_on_close=False) as fd: ...
+    fd, filename = tempfile.mkstemp(suffix=".yar")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(yara_rule_01)
+
+        rc, out, _err = runvol_plugin(
+            "linux.vmayarascan.VmaYaraScan",
+            image,
+            volatility,
+            python,
+            pluginargs=["--pid", "8600", "--yara-file", filename],
+        )
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(filename)
+
+    assert rc == 0
+    assert out.count(b"\n") > 4
+
+
+def test_linux_vmayarascan_yara_string(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.vmayarascan.VmaYaraScan",
+        image,
+        volatility,
+        python,
+        pluginargs=["--pid", "1", "--yara-string", "ELF"],
+    )
+
+    assert rc == 0
+    assert out.count(b"\n") > 10
+
+
+def test_linux_page_cache_files(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.pagecache.Files",
+        image,
+        volatility,
+        python,
+        pluginargs=["--find", "/etc/passwd"],
+    )
+
+    assert rc == 0
+    assert out.count(b"\n") > 4
+
+    # inode_num inode_addr ... file_path
     assert re.search(
-        rb"bash\s8600\s0x7fe78a85f000\s/lib/x86_64-linux-gnu/libnss_files.so.2",
+        rb"146829\s0x88001ab5c270.*?/etc/passwd",
         out,
     )
 
-    assert out.count(b"\n") >= 2677
+
+def test_linux_page_cache_inodepages(image, volatility, python):
+
+    inode_address = hex(0x88001AB5C270)
+    inode_dump_filename = f"inode_{inode_address}.dmp"
+    try:
+        rc, out, _err = runvol_plugin(
+            "linux.pagecache.InodePages",
+            image,
+            volatility,
+            python,
+            pluginargs=["--inode", inode_address, "--dump"],
+        )
+
+        assert rc == 0
+        assert out.count(b"\n") > 4
+
+        # PageVAddr PagePAddr MappingAddr .. DumpSafe
+        assert re.search(
+            rb"0xea000054c5f8\s0x18389000\s0x88001ab5c3b0.*?True",
+            out,
+        )
+        assert os.path.exists(inode_dump_filename)
+        with open(inode_dump_filename, "rb") as fp:
+            inode_contents = fp.read()
+        assert inode_contents.count(b"\n") > 30
+        assert inode_contents.count(b"root:x:0:0:root:/root:/bin/bash") > 0
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(inode_dump_filename)
+
+
+def test_linux_check_afinfo(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.check_afinfo.Check_afinfo", image, volatility, python
+    )
+
+    # linux-sample-1.bin has no suspicious results.
+    # This validates that plugin requirements are met and exceptions are not raised.
     assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_check_modules(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.check_modules.Check_modules", image, volatility, python
+    )
+
+    # linux-sample-1.bin has no suspicious results.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_ebpf_progs(image, volatility, python):
+    rc, out, err = runvol_plugin(
+        "linux.ebpf.EBPF",
+        image,
+        volatility,
+        python,
+        globalargs=["-vvv"],
+    )
+
+    if rc != 0 and err.count(b"Unsupported kernel") > 0:
+        # The linux-sample-1.bin kernel implementation isn't supported.
+        # However, we can still check that the plugin requirements are met.
+        return None
+
+    assert rc == 0
+    assert out.count(b"\n") > 4
+
+
+def test_linux_iomem(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.iomem.IOMem", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 100
+
+
+def test_linux_keyboard_notifiers(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.keyboard_notifiers.Keyboard_notifiers", image, volatility, python
+    )
+
+    # linux-sample-1.bin has no suspicious results for this plugin.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_kmesg(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.kmsg.Kmsg", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 100
+
+
+def test_linux_netfilter(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.netfilter.Netfilter", image, volatility, python
+    )
+
+    # linux-sample-1.bin has no suspicious results for this plugin.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+
+def test_linux_psscan(image, volatility, python):
+    rc, out, _err = runvol_plugin("linux.psscan.PsScan", image, volatility, python)
+
+    assert rc == 0
+    assert out.count(b"\n") > 100
+
+
+def test_linux_hidden_modules(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.hidden_modules.Hidden_modules", image, volatility, python
+    )
+
+    # linux-sample-1.bin has no hidden modules.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") >= 4
 
 
 # MAC
 
 
 def test_mac_pslist(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.pslist.PsList", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.pslist.PsList", image, volatility, python)
     out = out.lower()
 
     assert (out.find(b"kernel_task") != -1) or (out.find(b"launchd") != -1)
@@ -392,7 +780,7 @@ def test_mac_pslist(image, volatility, python):
 
 
 def test_mac_check_syscall(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "mac.check_syscall.Check_syscall", image, volatility, python
     )
     out = out.lower()
@@ -405,7 +793,7 @@ def test_mac_check_syscall(image, volatility, python):
 
 
 def test_mac_check_sysctl(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "mac.check_sysctl.Check_sysctl", image, volatility, python
     )
     out = out.lower()
@@ -416,7 +804,7 @@ def test_mac_check_sysctl(image, volatility, python):
 
 
 def test_mac_check_trap_table(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "mac.check_trap_table.Check_trap_table", image, volatility, python
     )
     out = out.lower()
@@ -427,7 +815,7 @@ def test_mac_check_trap_table(image, volatility, python):
 
 
 def test_mac_ifconfig(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.ifconfig.Ifconfig", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.ifconfig.Ifconfig", image, volatility, python)
     out = out.lower()
 
     assert out.find(b"127.0.0.1") != -1
@@ -437,7 +825,7 @@ def test_mac_ifconfig(image, volatility, python):
 
 
 def test_mac_lsmod(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.lsmod.Lsmod", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.lsmod.Lsmod", image, volatility, python)
     out = out.lower()
 
     assert out.find(b"com.apple") != -1
@@ -446,7 +834,7 @@ def test_mac_lsmod(image, volatility, python):
 
 
 def test_mac_lsof(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.lsof.Lsof", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.lsof.Lsof", image, volatility, python)
     out = out.lower()
 
     assert out.count(b"\n") > 50
@@ -454,7 +842,7 @@ def test_mac_lsof(image, volatility, python):
 
 
 def test_mac_malfind(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.malfind.Malfind", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.malfind.Malfind", image, volatility, python)
     out = out.lower()
 
     assert out.count(b"\n") > 20
@@ -462,7 +850,7 @@ def test_mac_malfind(image, volatility, python):
 
 
 def test_mac_mount(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.mount.Mount", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.mount.Mount", image, volatility, python)
     out = out.lower()
 
     assert out.find(b"/dev") != -1
@@ -471,7 +859,7 @@ def test_mac_mount(image, volatility, python):
 
 
 def test_mac_netstat(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.netstat.Netstat", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.netstat.Netstat", image, volatility, python)
 
     assert out.find(b"TCP") != -1
     assert out.find(b"UDP") != -1
@@ -481,7 +869,7 @@ def test_mac_netstat(image, volatility, python):
 
 
 def test_mac_proc_maps(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.proc_maps.Maps", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.proc_maps.Maps", image, volatility, python)
     out = out.lower()
 
     assert out.find(b"[heap]") != -1
@@ -490,7 +878,7 @@ def test_mac_proc_maps(image, volatility, python):
 
 
 def test_mac_psaux(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.psaux.Psaux", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.psaux.Psaux", image, volatility, python)
     out = out.lower()
 
     assert out.find(b"executable_path") != -1
@@ -499,7 +887,7 @@ def test_mac_psaux(image, volatility, python):
 
 
 def test_mac_socket_filters(image, volatility, python):
-    rc, out, err = runvol_plugin(
+    rc, out, _err = runvol_plugin(
         "mac.socket_filters.Socket_filters", image, volatility, python
     )
     out = out.lower()
@@ -509,7 +897,7 @@ def test_mac_socket_filters(image, volatility, python):
 
 
 def test_mac_timers(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.timers.Timers", image, volatility, python)
+    rc, out, _err = runvol_plugin("mac.timers.Timers", image, volatility, python)
     out = out.lower()
 
     assert out.count(b"\n") > 6
@@ -517,7 +905,9 @@ def test_mac_timers(image, volatility, python):
 
 
 def test_mac_trustedbsd(image, volatility, python):
-    rc, out, err = runvol_plugin("mac.trustedbsd.Trustedbsd", image, volatility, python)
+    rc, out, _err = runvol_plugin(
+        "mac.trustedbsd.Trustedbsd", image, volatility, python
+    )
     out = out.lower()
 
     assert out.count(b"\n") > 10

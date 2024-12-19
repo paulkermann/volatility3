@@ -156,9 +156,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
         else:
             # It doesn't matter that we use KeyNode, we're just after the first two bytes
             vollog.debug(
-                "Unknown Signature {} (0x{:x}) at offset {}".format(
-                    signature, cell.u.KeyNode.Signature, cell_offset
-                )
+                f"Unknown Signature {signature} (0x{cell.u.KeyNode.Signature:x}) at offset {cell_offset}"
             )
             return cell
 
@@ -170,14 +168,15 @@ class RegistryHive(linear.LinearlyMappedLayer):
         return_list specifies whether the return result will be a single
         node (default) or a list of nodes from root to the current node
         (if return_list is true).
+
+        Raises RegistryFormatException if an invalid structure is encountered
+        Raises KeyError if the key is not found
         """
         root_node = self.get_node(self.root_cell_offset)
         if not root_node.vol.type_name.endswith(constants.BANG + "_CM_KEY_NODE"):
             raise RegistryFormatException(
                 self.name,
-                "Encountered {} instead of _CM_KEY_NODE".format(
-                    root_node.vol.type_name
-                ),
+                f"Encountered {root_node.vol.type_name} instead of _CM_KEY_NODE",
             )
         node_key = [root_node]
         if key.endswith("\\"):

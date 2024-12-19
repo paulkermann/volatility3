@@ -6,20 +6,21 @@
 Stores all the constant values that are generally fixed throughout
 volatility This includes default scanning block sizes, etc.
 """
+
 import enum
 import os.path
 import sys
 import warnings
 from typing import Callable, Optional
 
-import volatility3.framework.constants.linux
-import volatility3.framework.constants.windows
+from volatility3.framework.constants import linux as linux
+from volatility3.framework.constants import windows as windows
 from volatility3.framework.constants._version import (
-    PACKAGE_VERSION,
-    VERSION_MAJOR,
-    VERSION_MINOR,
-    VERSION_PATCH,
-    VERSION_SUFFIX,
+    PACKAGE_VERSION as PACKAGE_VERSION,
+    VERSION_MAJOR as VERSION_MAJOR,
+    VERSION_MINOR as VERSION_MINOR,
+    VERSION_PATCH as VERSION_PATCH,
+    VERSION_SUFFIX as VERSION_SUFFIX,
 )
 
 PLUGINS_PATH = [
@@ -65,7 +66,11 @@ LOGLEVEL_VVV = 7
 LOGLEVEL_VVVV = 6
 """Logging level for four levels of detail: -vvvvvv"""
 
-CACHE_PATH = os.path.join(os.path.expanduser("~"), ".cache", "volatility3")
+
+CACHE_PATH = os.path.join(
+    os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache"),
+    "volatility3",
+)
 """Default path to store cached data"""
 
 SQLITE_CACHE_PERIOD = "-3 days"

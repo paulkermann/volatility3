@@ -14,7 +14,7 @@ from urllib import parse, request
 from volatility3.cli import text_renderer, volshell
 from volatility3.framework import exceptions, interfaces, objects, plugins, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.layers import intel, physical, resources
+from volatility3.framework.layers import intel, physical, resources, scanners
 
 try:
     import capstone
@@ -28,6 +28,8 @@ class Volshell(interfaces.plugins.PluginInterface):
     """Shell environment to directly interact with a memory image."""
 
     _required_framework_version = (2, 0, 0)
+
+    DEFAULT_NUM_DISPLAY_BYTES = 128
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -149,6 +151,7 @@ class Volshell(interfaces.plugins.PluginInterface):
             (["cc", "create_configurable"], self.create_configurable),
             (["lf", "load_file"], self.load_file),
             (["rs", "run_script"], self.run_script),
+            (["rx", "regex_scan"], self.regex_scan),
         ]
 
     def _construct_locals_dict(self) -> Dict[str, Any]:
@@ -200,7 +203,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 connector = " "
                 if chunk_size < 2:
                     connector = ""
-                ascii_data = connector.join([self._ascii_bytes(x) for x in valid_data])
+                ascii_data = connector.join(self._ascii_bytes(x) for x in valid_data)
 
             print(hex(offset), "  ", hex_data, "  ", ascii_data)
             offset += 16
@@ -268,27 +271,52 @@ class Volshell(interfaces.plugins.PluginInterface):
             self.__current_kernel_name = kernel_name
         print(f"Current kernel : {self.current_kernel_name}")
 
-    def display_bytes(self, offset, count=128, layer_name=None):
+    def display_bytes(self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None):
         """Displays byte values and ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
         self._display_data(offset, remaining_data)
 
-    def display_quadwords(self, offset, count=128, layer_name=None):
+    def display_quadwords(
+        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None
+    ):
         """Displays quad-word values (8 bytes) and corresponding ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
         self._display_data(offset, remaining_data, format_string="Q")
 
-    def display_doublewords(self, offset, count=128, layer_name=None):
+    def display_doublewords(
+        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None
+    ):
         """Displays double-word values (4 bytes) and corresponding ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
         self._display_data(offset, remaining_data, format_string="I")
 
-    def display_words(self, offset, count=128, layer_name=None):
+    def display_words(self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None):
         """Displays word values (2 bytes) and corresponding ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
         self._display_data(offset, remaining_data, format_string="H")
 
-    def disassemble(self, offset, count=128, layer_name=None, architecture=None):
+    def regex_scan(self, pattern, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None):
+        """Scans for regex pattern in layer using RegExScanner."""
+        if not isinstance(pattern, bytes):
+            raise TypeError("pattern must be bytes, e.g. rx(b'pattern')")
+        layer_name_to_scan = layer_name or self.current_layer
+        for offset in self.context.layers[layer_name_to_scan].scan(
+            scanner=scanners.RegExScanner(pattern),
+            context=self.context,
+        ):
+            remaining_data = self._read_data(
+                offset, count=count, layer_name=layer_name_to_scan
+            )
+            self._display_data(offset, remaining_data)
+            print("")
+
+    def disassemble(
+        self,
+        offset,
+        count=DEFAULT_NUM_DISPLAY_BYTES,
+        layer_name=None,
+        architecture=None,
+    ):
         """Disassembles a number of instructions from the code at offset"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
         if not has_capstone:
@@ -557,7 +585,6 @@ class NullFileHandler(io.BytesIO, interfaces.plugins.FileHandlerInterface):
 
     def writelines(self, lines: Iterable[bytes]):
         """Dummy method"""
-        pass
 
     def write(self, b: bytes):
         """Dummy method"""

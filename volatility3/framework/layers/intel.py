@@ -22,6 +22,16 @@ INTEL_TRANSLATION_DEBUGGING = False
 class Intel(linear.LinearlyMappedLayer):
     """Translation Layer for the Intel IA32 memory mapping."""
 
+    _PAGE_BIT_PRESENT = 0
+    _PAGE_BIT_PSE = 7  # Page Size Extension: 4 MB (or 2MB) page
+    _PAGE_BIT_PROTNONE = 8
+    _PAGE_BIT_PAT_LARGE = 12  # 2MB or 1GB pages
+
+    _PAGE_PRESENT = 1 << _PAGE_BIT_PRESENT
+    _PAGE_PSE = 1 << _PAGE_BIT_PSE
+    _PAGE_PROTNONE = 1 << _PAGE_BIT_PROTNONE
+    _PAGE_PAT_LARGE = 1 << _PAGE_BIT_PAT_LARGE
+
     _entry_format = "<I"
     _page_size_in_bits = 12
     _bits_per_register = 32
@@ -63,18 +73,16 @@ class Intel(linear.LinearlyMappedLayer):
         )
 
         # These can vary depending on the type of space
-        self._index_shift = int(
-            math.ceil(math.log2(struct.calcsize(self._entry_format)))
-        )
+        self._index_shift = math.ceil(math.log2(struct.calcsize(self._entry_format)))
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def page_shift(cls) -> int:
         """Page shift for the intel memory layers."""
         return cls._page_size_in_bits
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def page_size(cls) -> int:
         """Page size for the intel memory layers.
 
@@ -83,25 +91,25 @@ class Intel(linear.LinearlyMappedLayer):
         return 1 << cls._page_size_in_bits
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def page_mask(cls) -> int:
         """Page mask for the intel memory layers."""
         return ~(cls.page_size - 1)
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def bits_per_register(cls) -> int:
         """Returns the bits_per_register to determine the range of an
         IntelTranslationLayer."""
         return cls._bits_per_register
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def minimum_address(cls) -> int:
         return 0
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def maximum_address(cls) -> int:
         return (1 << cls._maxvirtaddr) - 1
 
@@ -115,7 +123,6 @@ class Intel(linear.LinearlyMappedLayer):
         high_mask = (1 << (high_bit + 1)) - 1
         low_mask = (1 << low_bit) - 1
         mask = high_mask ^ low_mask
-        # print(high_bit, low_bit, bin(mask), bin(value))
         return value & mask
 
     @staticmethod
@@ -137,7 +144,7 @@ class Intel(linear.LinearlyMappedLayer):
         return self._mask(addr, self._maxvirtaddr, 0) + self._canonical_prefix
 
     def decanonicalize(self, addr: int) -> int:
-        """Removes canonicalization to ensure an adress fits within the correct range if it has been canonicalized
+        """Removes canonicalization to ensure an address fits within the correct range if it has been canonicalized
 
         This will produce an address outside the range if the canonicalization is incorrect
         """
@@ -163,11 +170,16 @@ class Intel(linear.LinearlyMappedLayer):
                 entry,
                 f"Page Fault at entry {hex(entry)} in page entry",
             )
-        page = self._mask(entry, self._maxphyaddr - 1, position + 1) | self._mask(
-            offset, position, 0
-        )
+
+        pfn = self._pte_pfn(entry)
+        page_offset = self._mask(offset, position, 0)
+        page = pfn << self.page_shift | page_offset
 
         return page, 1 << (position + 1), self._base_layer
+
+    def _pte_pfn(self, entry: int) -> int:
+        """Extracts the page frame number (PFN) from the page table entry (PTE) entry"""
+        return self._mask(entry, self._maxphyaddr - 1, 0) >> self.page_shift
 
     def _translate_entry(self, offset: int) -> Tuple[int, int]:
         """Translates a specific offset based on paging tables.
@@ -203,10 +215,10 @@ class Intel(linear.LinearlyMappedLayer):
                     "Page Fault at entry " + hex(entry) + " in table " + name,
                 )
             # Check if we're a large page
-            if large_page and (entry & (1 << 7)):
+            if large_page and (entry & self._PAGE_PSE):
                 # Mask off the PAT bit
-                if entry & (1 << 12):
-                    entry -= 1 << 12
+                if entry & self._PAGE_PAT_LARGE:
+                    entry -= self._PAGE_PAT_LARGE
                 # We're a large page, the rest is finished below
                 # If we want to implement PSE-36, it would need to be done here
                 break
@@ -239,12 +251,7 @@ class Intel(linear.LinearlyMappedLayer):
             if INTEL_TRANSLATION_DEBUGGING:
                 vollog.log(
                     constants.LOGLEVEL_VVVV,
-                    "Entry {} at index {} gives data {} as {}".format(
-                        hex(entry),
-                        hex(index),
-                        hex(struct.unpack(self._entry_format, entry_data)[0]),
-                        name,
-                    ),
+                    f"Entry {hex(entry)} at index {hex(index)} gives data {hex(struct.unpack(self._entry_format, entry_data)[0])} as {name}",
                 )
 
             # Read out the new entry from memory
@@ -252,7 +259,7 @@ class Intel(linear.LinearlyMappedLayer):
 
         return entry, position
 
-    @functools.lru_cache(1025)
+    @functools.lru_cache(maxsize=1025)
     def _get_valid_table(self, base_address: int) -> Optional[bytes]:
         """Extracts the table, validates it and returns it if it's valid."""
         table = self._context.layers.read(
@@ -501,3 +508,85 @@ class WindowsIntel32e(WindowsMixin, Intel32e):
 
     def _translate(self, offset: int) -> Tuple[int, int, str]:
         return self._translate_swap(self, offset, self._bits_per_register // 2)
+
+
+class LinuxMixin(Intel):
+    @functools.cached_property
+    def _register_mask(self) -> int:
+        return (1 << self._bits_per_register) - 1
+
+    @functools.cached_property
+    def _physical_mask(self) -> int:
+        # From kernels 4.18 the physical mask is dynamic: See AMD SME, Intel Multi-Key Total
+        # Memory Encryption and CONFIG_DYNAMIC_PHYSICAL_MASK: 94d49eb30e854c84d1319095b5dd0405a7da9362
+        physical_mask = (1 << self._maxphyaddr) - 1
+        # TODO: Come back once SME support is available in the framework
+        return physical_mask
+
+    @functools.cached_property
+    def page_mask(self) -> int:
+        # Note that within the Intel class it's a class method. However, since it uses
+        # complement operations and we are working in Python, it would be more careful to
+        # limit it to the architecture's pointer size.
+        return ~(self.page_size - 1) & self._register_mask
+
+    @functools.cached_property
+    def _physical_page_mask(self) -> int:
+        return self.page_mask & self._physical_mask
+
+    @functools.cached_property
+    def _pte_pfn_mask(self) -> int:
+        return self._physical_page_mask
+
+    @functools.cached_property
+    def _pte_flags_mask(self) -> int:
+        return ~self._pte_pfn_mask & self._register_mask
+
+    def _pte_flags(self, pte) -> int:
+        return pte & self._pte_flags_mask
+
+    def _is_pte_present(self, entry: int) -> bool:
+        return (
+            self._pte_flags(entry) & (self._PAGE_PRESENT | self._PAGE_PROTNONE)
+        ) != 0
+
+    def _page_is_valid(self, entry: int) -> bool:
+        # Overrides the Intel static method with the Linux-specific implementation
+        return self._is_pte_present(entry)
+
+    def _pte_needs_invert(self, entry) -> bool:
+        # Entries that were set to PROT_NONE (PAGE_PRESENT) are inverted
+        # A clear PTE shouldn't be inverted. See f19f5c4
+        return entry and not (entry & self._PAGE_PRESENT)
+
+    def _protnone_mask(self, entry: int) -> int:
+        """Gets a mask to XOR with the page table entry to get the correct PFN"""
+        return self._register_mask if self._pte_needs_invert(entry) else 0
+
+    def _pte_pfn(self, entry: int) -> int:
+        """Extracts the page frame number from the page table entry"""
+        pfn = entry ^ self._protnone_mask(entry)
+        return (pfn & self._pte_pfn_mask) >> self.page_shift
+
+
+class LinuxIntel(LinuxMixin, Intel):
+    pass
+
+
+class LinuxIntelPAE(LinuxMixin, IntelPAE):
+    pass
+
+
+class LinuxIntel32e(LinuxMixin, Intel32e):
+    # In the Linux kernel, the __PHYSICAL_MASK_SHIFT is a mask used to extract the
+    # physical address from a PTE. In Volatility3, this is referred to as _maxphyaddr.
+    #
+    # Until kernel version 4.17, Linux x86-64 used a 46-bit mask. With commit
+    # b83ce5ee91471d19c403ff91227204fb37c95fb2, this was extended to 52 bits,
+    # applying to both 4 and 5-level page tables.
+    #
+    # We initially used 52 bits for all Intel 64-bit systems, but this produced incorrect
+    # results for PROT_NONE pages. Since the mask value is defined by a preprocessor macro,
+    # it's difficult to detect the exact bit shift used in the current kernel.
+    # Using 46 bits has proven reliable for our use case, as seen in tools like crashtool.
+    _maxphyaddr = 46

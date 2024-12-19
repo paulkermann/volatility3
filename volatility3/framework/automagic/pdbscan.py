@@ -215,9 +215,7 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
                     return (virtual_layer_name, kvo, kernel)
                 else:
                     vollog.debug(
-                        "Potential kernel_virtual_offset did not map to expected location: {}".format(
-                            hex(kvo)
-                        )
+                        f"Potential kernel_virtual_offset did not map to expected location: {hex(kvo)}"
                     )
             except exceptions.InvalidAddressException:
                 vollog.debug(
@@ -270,6 +268,10 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
             progress_callback=progress_callback,
         )
         for kernel in kernels:
+            vollog.log(
+                constants.LOGLEVEL_VVVV,
+                f"Testing potential kernel for {kernel.get('pdb_name', 'Unknown')} at {kernel.get('signature_offset', -1):x} with MZ offset at {(kernel.get('mz_offset', -1) or -1):x}",
+            )
             valid_kernel = test_kernel(physical_layer_name, virtual_layer_name, kernel)
             if valid_kernel is not None:
                 break

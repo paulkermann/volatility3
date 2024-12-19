@@ -232,10 +232,9 @@ class MacUtilities(interfaces.configuration.VersionableInterface):
         next_member: str,
         max_elements: int = 4096,
     ) -> Iterable[interfaces.objects.ObjectInterface]:
-        for element in cls._walk_iterable(
+        yield from cls._walk_iterable(
             queue, "tqh_first", "tqe_next", next_member, max_elements
-        ):
-            yield element
+        )
 
     @classmethod
     def walk_list_head(
@@ -244,10 +243,9 @@ class MacUtilities(interfaces.configuration.VersionableInterface):
         next_member: str,
         max_elements: int = 4096,
     ) -> Iterable[interfaces.objects.ObjectInterface]:
-        for element in cls._walk_iterable(
+        yield from cls._walk_iterable(
             queue, "lh_first", "le_next", next_member, max_elements
-        ):
-            yield element
+        )
 
     @classmethod
     def walk_slist(
@@ -256,7 +254,6 @@ class MacUtilities(interfaces.configuration.VersionableInterface):
         next_member: str,
         max_elements: int = 4096,
     ) -> Iterable[interfaces.objects.ObjectInterface]:
-        for element in cls._walk_iterable(
+        yield from cls._walk_iterable(
             queue, "slh_first", "sle_next", next_member, max_elements
-        ):
-            yield element
+        )

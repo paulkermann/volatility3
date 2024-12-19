@@ -94,7 +94,7 @@ class HierarchicalDict(collections.abc.Mapping):
             raise TypeError(f"Separator must be a one character string: {separator}")
         self._separator = separator
         self._data: Dict[str, ConfigSimpleType] = {}
-        self._subdict: Dict[str, "HierarchicalDict"] = {}
+        self._subdict: Dict[str, HierarchicalDict] = {}
         if isinstance(initial_dict, str):
             initial_dict = json.loads(initial_dict)
         if isinstance(initial_dict, dict):
@@ -182,9 +182,7 @@ class HierarchicalDict(collections.abc.Mapping):
             else:
                 if not isinstance(value, HierarchicalDict):
                     raise TypeError(
-                        "HierarchicalDicts can only store HierarchicalDicts within their structure: {}".format(
-                            type(value)
-                        )
+                        f"HierarchicalDicts can only store HierarchicalDicts within their structure: {type(value)}"
                     )
                 self._subdict[key] = value
 
@@ -498,9 +496,7 @@ class SimpleTypeRequirement(RequirementInterface):
         if not isinstance(value, self.instance_type):
             vollog.log(
                 constants.LOGLEVEL_V,
-                "TypeError - {} requirements only accept {} type: {}".format(
-                    self.name, self.instance_type.__name__, repr(value)
-                ),
+                f"TypeError - {self.name} requirements only accept {self.instance_type.__name__} type: {repr(value)}",
             )
             return {config_path: self}
         return {}

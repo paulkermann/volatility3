@@ -149,7 +149,7 @@ class ABCKmsg(ABC):
         #   This might seem insignificant but it could cause some issues
         #   when compared with userland tool results or when used in
         #   timelines.
-        return "%lu.%06lu" % (nsec / 1000000000, (nsec % 1000000000) / 1000)
+        return f"{nsec / 1000000000:lu}.{(nsec % 1000000000) / 1000:06lu}"
 
     def get_timestamp_in_sec_str(self, obj) -> str:
         # obj could be log, printk_log or printk_info
@@ -166,7 +166,7 @@ class ABCKmsg(ABC):
 
     def get_caller_text(self, caller_id):
         caller_name = "CPU" if caller_id & 0x80000000 else "Task"
-        caller = "%s(%u)" % (caller_name, caller_id & ~0x80000000)
+        caller = f"{caller_name}({caller_id & ~0x80000000:u})"
         return caller
 
     def get_prefix(self, obj) -> Tuple[int, int, str, str]:

@@ -76,7 +76,7 @@ class ColumnFilter:
             if self.regex:
                 return re.search(self.pattern, f"{item}")
             return self.pattern in f"{item}"
-        except IOError:
+        except OSError:
             return False
 
     def found(self, row: List[Any]) -> bool:

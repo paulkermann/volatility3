@@ -12,7 +12,8 @@ class PsTree(interfaces.plugins.PluginInterface):
     """Plugin for listing processes in a tree based on their parent process
     ID."""
 
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 13, 0)
+    _version = (1, 1, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -24,7 +25,7 @@ class PsTree(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 2, 0)
+                name="pslist", plugin=pslist.PsList, version=(4, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -55,9 +56,9 @@ class PsTree(interfaces.plugins.PluginInterface):
         seen = set([pid])
         level = 0
         proc = self._tasks.get(pid)
-        while proc and proc.parent and proc.parent.pid not in seen:
+        while proc and proc.get_parent_pid() not in seen:
             if proc.is_thread_group_leader:
-                parent_pid = proc.parent.pid
+                parent_pid = proc.get_parent_pid()
             else:
                 parent_pid = proc.tgid
 
@@ -100,15 +101,17 @@ class PsTree(interfaces.plugins.PluginInterface):
         def yield_processes(pid):
             task = self._tasks[pid]
 
-            row = pslist.PsList.get_task_fields(task, decorate_comm)
-            # update the first element, the offset, in the row tuple to use format_hints.Hex
-            # as a simple int is returned from get_task_fields.
-            row = (format_hints.Hex(row[0]),) + row[1:]
+            task_fields = pslist.PsList.get_task_fields(task, decorate_comm)
+            fields = (
+                format_hints.Hex(task_fields.offset),
+                task_fields.user_pid,
+                task_fields.user_tid,
+                task_fields.user_ppid,
+                task_fields.name,
+            )
+            yield (self._levels[task_fields.user_tid] - 1, fields)
 
-            tid = task.pid
-            yield (self._levels[tid] - 1, row)
-
-            for child_pid in sorted(self._children.get(tid, [])):
+            for child_pid in sorted(self._children.get(task_fields.user_tid, [])):
                 yield from yield_processes(child_pid)
 
         for pid, level in self._levels.items():

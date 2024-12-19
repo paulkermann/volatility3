@@ -4,7 +4,7 @@
 
 import os
 import logging
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple
 
 from volatility3.framework import constants, interfaces
 from volatility3.framework.automagic import symbol_cache, symbol_finder
@@ -27,16 +27,6 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
         progress_callback: constants.ProgressCallback = None,
     ) -> Optional[interfaces.layers.DataLayerInterface]:
         """Attempts to identify linux within this layer."""
-        # Version check the SQlite cache
-        required = (1, 0, 0)
-        if not requirements.VersionRequirement.matches_required(
-            required, symbol_cache.SqliteCache.version
-        ):
-            vollog.info(
-                f"SQLiteCache version not suitable: required {required} found {symbol_cache.SqliteCache.version}"
-            )
-            return None
-
         # Bail out by default unless we can stack properly
         layer = context.layers[layer_name]
         join = interfaces.configuration.path_join
@@ -46,12 +36,9 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
         if isinstance(layer, intel.Intel):
             return None
 
-        identifiers_path = os.path.join(
-            constants.CACHE_PATH, constants.IDENTIFIERS_FILENAME
+        linux_banners = symbol_cache.load_cache_manager().get_identifier_dictionary(
+            operating_system="linux"
         )
-        linux_banners = symbol_cache.SqliteCache(
-            identifiers_path
-        ).get_identifier_dictionary(operating_system="linux")
         # If we have no banners, don't bother scanning
         if not linux_banners:
             vollog.info(
@@ -84,14 +71,14 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
                     progress_callback=progress_callback,
                 )
 
-                layer_class: Type = intel.Intel
                 if "init_top_pgt" in table.symbols:
-                    layer_class = intel.Intel32e
+                    layer_class = intel.LinuxIntel32e
                     dtb_symbol_name = "init_top_pgt"
                 elif "init_level4_pgt" in table.symbols:
-                    layer_class = intel.Intel32e
+                    layer_class = intel.LinuxIntel32e
                     dtb_symbol_name = "init_level4_pgt"
                 else:
+                    layer_class = intel.LinuxIntel
                     dtb_symbol_name = "swapper_pg_dir"
 
                 dtb = cls.virtual_to_physical_address(
@@ -170,6 +157,18 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
                 and init_task.state.cast("unsigned int") != 0
             ):
                 continue
+            elif init_task.active_mm.cast("long unsigned int") == module.get_symbol(
+                "init_mm"
+            ).address and init_task.tasks.next.cast(
+                "long unsigned int"
+            ) == init_task.tasks.prev.cast(
+                "long unsigned int"
+            ):
+                # The idle task steals `mm` from previously running task, i.e.,
+                # `init_mm` is only used as long as no CPU has ever been idle.
+                # This catches cases where we found a fragment of the
+                # unrelocated ELF file instead of the running kernel.
+                continue
 
             # This we get for free
             aslr_shift = (
@@ -188,9 +187,7 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
             if aslr_shift & 0xFFF != 0 or kaslr_shift & 0xFFF != 0:
                 continue
             vollog.debug(
-                "Linux ASLR shift values determined: physical {:0x} virtual {:0x}".format(
-                    kaslr_shift, aslr_shift
-                )
+                f"Linux ASLR shift values determined: physical {kaslr_shift:0x} virtual {aslr_shift:0x}"
             )
             return kaslr_shift, aslr_shift
 
@@ -213,8 +210,11 @@ class LinuxSymbolFinder(symbol_finder.SymbolFinder):
     banner_config_key = "kernel_banner"
     operating_system = "linux"
     symbol_class = "volatility3.framework.symbols.linux.LinuxKernelIntermedSymbols"
-    find_aslr = lambda cls, *args: LinuxIntelStacker.find_aslr(*args)[1]
     exclusion_list = ["mac", "windows"]
+
+    @classmethod
+    def find_aslr(cls, *args):
+        return LinuxIntelStacker.find_aslr(*args)[1]
 
 
 class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):

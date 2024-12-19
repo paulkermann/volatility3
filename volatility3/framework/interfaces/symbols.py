@@ -250,7 +250,6 @@ class BaseSymbolTableInterface:
 
     def clear_symbol_cache(self) -> None:
         """Clears the symbol cache of this symbol table."""
-        pass
 
 
 class SymbolSpaceInterface(collections.abc.Mapping):
@@ -378,7 +377,7 @@ class NativeTableInterface(BaseSymbolTableInterface):
         return []
 
 
-class MetadataInterface(object):
+class MetadataInterface:
     """Interface for accessing metadata stored within a symbol table."""
 
     def __init__(self, json_data: Dict) -> None:

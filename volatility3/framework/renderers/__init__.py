@@ -88,9 +88,7 @@ class TreeNode(interfaces.renderers.TreeNode):
             val = values[index]
             if not isinstance(val, (column.type, interfaces.renderers.BaseAbsentValue)):
                 raise TypeError(
-                    "Values item with index {} is the wrong type for column {} (got {} but expected {})".format(
-                        index, column.name, type(val), column.type
-                    )
+                    f"Values item with index {index} is the wrong type for column {column.name} (got {type(val)} but expected {column.type})"
                 )
             # TODO: Consider how to deal with timezone naive/aware datetimes (and alert plugin uses to be precise)
             # if isinstance(val, datetime.datetime):
@@ -189,9 +187,7 @@ class TreeGrid(interfaces.renderers.TreeGrid):
             is_simple_type = issubclass(column_type, self.base_types)
             if not is_simple_type:
                 raise TypeError(
-                    "Column {}'s type is not a simple type: {}".format(
-                        name, column_type.__class__.__name__
-                    )
+                    f"Column {name}'s type is not a simple type: {column_type.__class__.__name__}"
                 )
             converted_columns.append(interfaces.renderers.Column(name, column_type))
         self.RowStructure = RowStructureConstructor(
@@ -434,10 +430,10 @@ class ColumnSortKey(interfaces.renderers.ColumnSortKey):
                 value = datetime.datetime.min
             elif self._type in [int, float]:
                 value = -1
-            elif self._type == bool:
+            elif self._type is bool:
                 value = False
             elif self._type in [str, renderers.Disassembly]:
                 value = "-"
-            elif self._type == bytes:
+            elif self._type is bytes:
                 value = b""
         return value

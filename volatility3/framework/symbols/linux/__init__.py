@@ -632,8 +632,7 @@ class IDStorage(ABC):
                 if self.is_valid_node(nodep):
                     yield nodep
             else:
-                for child_node in self._iter_node(nodep, height - 1):
-                    yield child_node
+                yield from self._iter_node(nodep, height - 1)
 
     def get_entries(self, root: interfaces.objects.ObjectInterface) -> Iterator[int]:
         """Walks the tree data structure
@@ -662,8 +661,7 @@ class IDStorage(ABC):
             if self.is_valid_node(nodep):
                 yield nodep
         else:
-            for child_node in self._iter_node(nodep, height):
-                yield child_node
+            yield from self._iter_node(nodep, height)
 
 
 class XArray(IDStorage):
@@ -801,7 +799,7 @@ class RadixTree(IDStorage):
         return True
 
 
-class PageCache(object):
+class PageCache:
     """Linux Page Cache abstraction"""
 
     def __init__(

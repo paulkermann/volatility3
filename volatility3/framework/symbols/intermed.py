@@ -171,7 +171,7 @@ class IntermediateSymbolTable(interfaces.symbols.SymbolTableInterface):
         (indicating that only additive   changes have been made) than
         the consumer (in this case, the file reader).
         """
-        major, minor, patch = [int(x) for x in version.split(".")]
+        major, minor, patch = (int(x) for x in version.split("."))
         supported_versions = [x for x in versions if x[0] == major and x[1] >= minor]
         if not supported_versions:
             raise ValueError(
@@ -738,10 +738,17 @@ class Version6Format(Version5Format):
     @property
     def metadata(self) -> Optional[interfaces.symbols.MetadataInterface]:
         """Returns a MetadataInterface object."""
-        if self._json_object.get("metadata", {}).get("windows"):
-            return metadata.WindowsMetadata(self._json_object["metadata"]["windows"])
-        if self._json_object.get("metadata", {}).get("linux"):
-            return metadata.LinuxMetadata(self._json_object["metadata"]["linux"])
+        if "metadata" not in self._json_object:
+            return None
+
+        json_metadata = self._json_object["metadata"]
+        if "windows" in json_metadata:
+            return metadata.WindowsMetadata(json_metadata["windows"])
+        if "linux" in json_metadata:
+            return metadata.LinuxMetadata(json_metadata["linux"])
+        if "mac" in json_metadata:
+            return metadata.MacMetadata(json_metadata["mac"])
+
         return None
 
 

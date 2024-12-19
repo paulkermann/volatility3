@@ -172,9 +172,7 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
 
         except exceptions.InvalidAddressException:
             vollog.debug(
-                "Unable to construct cSystems array at given offset: {:x}".format(
-                    array_start
-                )
+                f"Unable to construct cSystems array at given offset: {array_start:x}"
             )
             array = None
 
@@ -291,9 +289,7 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
 
             except exceptions.InvalidAddressException as excp:
                 vollog.debug(
-                    "Process {}: invalid address {} in layer {}".format(
-                        proc_id, excp.invalid_address, excp.layer_name
-                    )
+                    f"Process {proc_id}: invalid address {excp.invalid_address} in layer {excp.layer_name}"
                 )
 
         return None, None

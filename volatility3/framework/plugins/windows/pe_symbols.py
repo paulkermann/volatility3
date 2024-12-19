@@ -645,7 +645,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             and wanted_addresses_identifier not in wanted_symbols
         ):
             vollog.warning(
-                f"Invalid `wanted_symbols` sent to `find_symbols`. addresses and names keys both misssing."
+                "Invalid `wanted_symbols` sent to `find_symbols`. addresses and names keys both misssing."
             )
             return
 

@@ -22,7 +22,7 @@ def inet_ntop(address_family: int, packed_ip: Union[List[int], Array]) -> str:
             raise RuntimeError(
                 "This version of python does not have socket.inet_ntop, please upgrade"
             )
-    raise socket.error("[Errno 97] Address family not supported by protocol")
+    raise OSError("[Errno 97] Address family not supported by protocol")
 
 
 # Python's socket.AF_INET6 is 0x1e but Microsoft defines it
@@ -167,11 +167,9 @@ class _TCP_LISTENER(objects.StructType):
 
     def is_valid(self):
         try:
-            if not self.get_address_family() in (AF_INET, AF_INET6):
+            if self.get_address_family() not in (AF_INET, AF_INET6):
                 vollog.debug(
-                    "netw obj 0x{:x} invalid due to invalid address_family {}".format(
-                        self.vol.offset, self.get_address_family()
-                    )
+                    f"netw obj 0x{self.vol.offset:x} invalid due to invalid address_family {self.get_address_family()}"
                 )
                 return False
 

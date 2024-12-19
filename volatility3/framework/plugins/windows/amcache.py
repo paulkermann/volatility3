@@ -215,7 +215,7 @@ def _get_datetime_str_value(
 
 
 class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
-    """Scans for windows services."""
+    """Extract information on executed applications from the AmCache."""
 
     _required_framework_version = (2, 0, 0)
     _version = (1, 0, 0)

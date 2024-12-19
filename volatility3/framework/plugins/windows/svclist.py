@@ -85,9 +85,7 @@ class SvcList(svcscan.SvcScan):
                 layer_name = proc.add_process_layer()
             except exceptions.InvalidAddressException:
                 vollog.warning(
-                    "Unable to access memory of services.exe running with PID: {}".format(
-                        proc.UniqueProcessId
-                    )
+                    f"Unable to access memory of services.exe running with PID: {proc.UniqueProcessId}"
                 )
                 continue
 
@@ -105,11 +103,10 @@ class SvcList(svcscan.SvcScan):
                 scanner=scanners.BytesScanner(needle=b"Sc27"),
                 sections=exe_range,
             ):
-                for record in cls.enumerate_vista_or_later_header(
+                yield from cls.enumerate_vista_or_later_header(
                     context,
                     service_table_name,
                     service_binary_dll_map,
                     layer_name,
                     offset,
-                ):
-                    yield record
+                )
