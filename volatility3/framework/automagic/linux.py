@@ -339,8 +339,8 @@ class LinuxIntelVMCOREINFOStacker(interfaces.automagic.StackerLayerInterface):
                 context.symbol_space.append(table)
 
                 # Build the new layer
-                new_layer_name = context.layers.free_layer_name("IntelLayer")
-                config_path = join("IntelHelper", new_layer_name)
+                new_layer_name = context.layers.free_layer_name("primary")
+                config_path = join("vmcoreinfo", new_layer_name)
                 kernel_banner = LinuxSymbolFinder.banner_config_key
                 banner_str = banner.decode(encoding="latin-1")
                 context.config[join(config_path, kernel_banner)] = banner_str
