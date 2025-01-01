@@ -11,6 +11,7 @@ without them interfering with each other.
 import functools
 import hashlib
 import logging
+import re
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from volatility3.framework import constants, interfaces, symbols, exceptions
@@ -387,7 +388,6 @@ class ModuleCollection(interfaces.context.ModuleContainer):
     contents."""
 
     def __init__(self, modules: Optional[List[SizedModule]] = None) -> None:
-        self._prefix_count = {}
         self._modules: Dict[str, SizedModule] = {}
         super().__init__(modules)
 
@@ -408,13 +408,12 @@ class ModuleCollection(interfaces.context.ModuleContainer):
 
     def free_module_name(self, prefix: str = "module") -> str:
         """Returns an unused module name"""
-        if prefix not in self._prefix_count:
-            self._prefix_count[prefix] = 1
+        existing_names = [name for name in self if re.match(rf"^{prefix}[0-9]*$", name)]
+        if not existing_names:
             return prefix
-        count = self._prefix_count[prefix]
+        count = len(existing_names)
         while prefix + str(count) in self:
             count += 1
-        self._prefix_count[prefix] = count
         return prefix + str(count)
 
     @property
