@@ -76,7 +76,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
     """Class with multiple useful linux functions."""
 
-    _version = (2, 1, 1)
+    _version = (2, 2, 0)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -483,6 +483,22 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
         return kernel
 
+    @classmethod
+    def convert_fourcc_code(cls, code: int) -> str:
+        """Convert a fourcc integer back to its fourcc string representation.
+
+        Args:
+            code: the numerical representation of the fourcc
+
+        Returns:
+            The fourcc code string.
+        """
+
+        code_bytes_length = (code.bit_length() + 7) // 8
+        return "".join(
+            [chr((code >> (i * 8)) & 0xFF) for i in range(code_bytes_length)]
+        )
+
 
 class IDStorage(ABC):
     """Abstraction to support both XArray and RadixTree"""
@@ -629,8 +645,7 @@ class IDStorage(ABC):
                 if self.is_valid_node(nodep):
                     yield nodep
             else:
-                for child_node in self._iter_node(nodep, height - 1):
-                    yield child_node
+                yield from self._iter_node(nodep, height - 1)
 
     def get_entries(self, root: interfaces.objects.ObjectInterface) -> Iterator[int]:
         """Walks the tree data structure
@@ -659,8 +674,7 @@ class IDStorage(ABC):
             if self.is_valid_node(nodep):
                 yield nodep
         else:
-            for child_node in self._iter_node(nodep, height):
-                yield child_node
+            yield from self._iter_node(nodep, height)
 
 
 class XArray(IDStorage):
@@ -798,7 +812,7 @@ class RadixTree(IDStorage):
         return True
 
 
-class PageCache(object):
+class PageCache:
     """Linux Page Cache abstraction"""
 
     def __init__(

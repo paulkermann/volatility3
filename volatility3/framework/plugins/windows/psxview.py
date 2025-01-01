@@ -14,7 +14,6 @@ from volatility3.plugins.windows import (
     info,
     pslist,
     psscan,
-    sessions,
     thrdscan,
 )
 
@@ -26,7 +25,7 @@ class PsXView(plugins.PluginInterface):
     identify processes that are trying to hide themselves. I recommend using -r pretty if you are looking at this
     plugin's output in a terminal."""
 
-    # I've omitted the desktop thread scanning method because Volatility3 doesn't appear to have the funcitonality
+    # I've omitted the desktop thread scanning method because Volatility3 doesn't appear to have the functionality
     # which the original plugin used to do it.
 
     # The sessions method is omitted because it begins with the list of processes found by Pslist anyway.
@@ -219,7 +218,7 @@ class PsXView(plugins.PluginInterface):
             name = self._proc_name_to_string(proc)
 
             exit_time = proc.get_exit_time()
-            if type(exit_time) != datetime.datetime:
+            if type(exit_time) is not datetime.datetime:
                 exit_time = ""
             else:
                 exit_time = str(exit_time)

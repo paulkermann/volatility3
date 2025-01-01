@@ -183,7 +183,7 @@ class PoolScanner(plugins.PluginInterface):
 
     @staticmethod
     def builtin_constraints(
-        symbol_table: str, tags_filter: List[bytes] = None
+        symbol_table: str, tags_filter: Optional[List[bytes]] = None
     ) -> List[PoolConstraint]:
         """Get built-in PoolConstraints given a list of pool tags.
 

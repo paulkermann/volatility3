@@ -192,13 +192,7 @@ class DumpFiles(interfaces.plugins.PluginInterface):
 
         for memory_object, layer, extension in dump_parameters:
             cache_name = EXTENSION_CACHE_MAP[extension]
-            desired_file_name = "file.{0:#x}.{1:#x}.{2}.{3}.{4}".format(
-                file_obj.vol.offset,
-                memory_object.vol.offset,
-                cache_name,
-                ntpath.basename(obj_name),
-                extension,
-            )
+            desired_file_name = f"file.{file_obj.vol.offset:#x}.{memory_object.vol.offset:#x}.{cache_name}.{ntpath.basename(obj_name)}.{extension}"
 
             file_handle = cls.dump_file_producer(
                 file_obj, memory_object, open_method, layer, desired_file_name

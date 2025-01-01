@@ -46,7 +46,7 @@ class FileHandlerInterface(io.RawIOBase):
     def preferred_filename(self, filename: str):
         """Sets the preferred filename"""
         if self.closed:
-            raise IOError("FileHandler name cannot be changed once closed")
+            raise OSError("FileHandler name cannot be changed once closed")
         if not isinstance(filename, str):
             raise TypeError("FileHandler preferred filenames must be strings")
         if os.path.sep in filename:

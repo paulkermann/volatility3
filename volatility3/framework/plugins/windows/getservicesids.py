@@ -26,7 +26,7 @@ def createservicesid(svc) -> str:
         ## The use of struct here is OK. It doesn't make much sense
         ## to leverage obj.Object inside this loop.
         dec.append(struct.unpack("<I", sha[i * 4 : i * 4 + 4])[0])
-    return "S-1-5-80-" + "-".join([str(n) for n in dec])
+    return "S-1-5-80-" + "-".join(str(n) for n in dec)
 
 
 class GetServiceSIDs(interfaces.plugins.PluginInterface):
@@ -55,7 +55,7 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
             )
 
         # Get service sids dictionary (we need only the service sids).
-        with open(sids_json_file_name, "r") as file_handle:
+        with open(sids_json_file_name) as file_handle:
             self.servicesids = json.load(file_handle)["service sids"]
 
     @classmethod

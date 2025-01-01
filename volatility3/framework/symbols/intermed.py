@@ -86,7 +86,7 @@ class IntermediateSymbolTable(interfaces.symbols.SymbolTableInterface):
         config_path: str,
         name: str,
         isf_url: str,
-        native_types: interfaces.symbols.NativeTableInterface = None,
+        native_types: Optional[interfaces.symbols.NativeTableInterface] = None,
         table_mapping: Optional[Dict[str, str]] = None,
         validate: bool = True,
         class_types: Optional[
@@ -101,7 +101,7 @@ class IntermediateSymbolTable(interfaces.symbols.SymbolTableInterface):
         Args:
             context: The volatility context for the symbol table
             config_path: The configuration path for the symbol table
-            name: The name for the symbol table (this is used in symbols e.g. table!symbol )
+            name: The name for the symbol table (this is used in symbols e.g. table!symbol)
             isf_url: The URL pointing to the ISF file location
             native_types: The NativeSymbolTable that contains the native types for this symbol table
             table_mapping: A dictionary linking names referenced in the file with symbol tables in the context
@@ -111,7 +111,7 @@ class IntermediateSymbolTable(interfaces.symbols.SymbolTableInterface):
         """
         # Check there are no obvious errors
         # Open the file and test the version
-        self._versions = dict([(x.version, x) for x in class_subclasses(ISFormatTable)])
+        self._versions = dict((x.version, x) for x in class_subclasses(ISFormatTable))
         with resources.ResourceAccessor().open(isf_url) as fp:
             reader = codecs.getreader("utf-8")
             json_object = json.load(reader(fp))  # type: ignore
@@ -166,12 +166,12 @@ class IntermediateSymbolTable(interfaces.symbols.SymbolTableInterface):
         format.
 
         An interface version such as Major.Minor.Patch means that Major
-        of the provider must be equal to that of the   consumer, and the
+        of the provider must be equal to that of the consumer, and the
         provider (the JSON in this instance) must have a greater minor
-        (indicating that only additive   changes have been made) than
+        (indicating that only additive changes have been made) than
         the consumer (in this case, the file reader).
         """
-        major, minor, patch = [int(x) for x in version.split(".")]
+        major, minor, patch = (int(x) for x in version.split("."))
         supported_versions = [x for x in versions if x[0] == major and x[1] >= minor]
         if not supported_versions:
             raise ValueError(
@@ -319,7 +319,7 @@ class ISFormatTable(interfaces.symbols.SymbolTableInterface, metaclass=ABCMeta):
         config_path: str,
         name: str,
         json_object: Any,
-        native_types: interfaces.symbols.NativeTableInterface = None,
+        native_types: Optional[interfaces.symbols.NativeTableInterface] = None,
         table_mapping: Optional[Dict[str, str]] = None,
     ) -> None:
         self._json_object = json_object

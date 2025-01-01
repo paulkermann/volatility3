@@ -250,13 +250,13 @@ class BaseSymbolTableInterface:
 
     def clear_symbol_cache(self) -> None:
         """Clears the symbol cache of this symbol table."""
-        pass
 
 
 class SymbolSpaceInterface(collections.abc.Mapping):
     """An interface for the container that holds all the symbol-containing
     tables for use within a context."""
 
+    @abstractmethod
     def free_table_name(self, prefix: str = "layer") -> str:
         """Returns an unused table name to ensure no collision occurs when
         inserting a symbol table."""
@@ -378,7 +378,7 @@ class NativeTableInterface(BaseSymbolTableInterface):
         return []
 
 
-class MetadataInterface(object):
+class MetadataInterface:
     """Interface for accessing metadata stored within a symbol table."""
 
     def __init__(self, json_data: Dict) -> None:

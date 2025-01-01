@@ -196,9 +196,7 @@ class CM_KEY_NODE(objects.StructType):
             yield cast("CM_KEY_NODE", node)
         else:
             vollog.debug(
-                "Unexpected node type encountered when traversing subkeys: {}, signature: {}".format(
-                    node.vol.type_name, signature
-                )
+                f"Unexpected node type encountered when traversing subkeys: {node.vol.type_name}, signature: {signature}"
             )
 
         if listjump:

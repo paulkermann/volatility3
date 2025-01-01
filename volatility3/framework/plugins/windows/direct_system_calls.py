@@ -433,6 +433,8 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
             proc_layer = self.context.layers[proc_layer_name]
 
             vads = self.get_vad_maps(proc)
+            if not vads:
+                continue
 
             # for each valid process, look for malicious syscall invocations
             for address, vad_path in self._get_rule_hits(

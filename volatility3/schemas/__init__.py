@@ -20,7 +20,7 @@ def load_cached_validations() -> Set[str]:
     to revalidate them."""
     validhashes: Set = set()
     if os.path.exists(cached_validation_filepath):
-        with open(cached_validation_filepath, "r") as f:
+        with open(cached_validation_filepath) as f:
             validhashes.update(json.load(f))
     return validhashes
 
@@ -46,7 +46,7 @@ def validate(input: Dict[str, Any], use_cache: bool = True) -> bool:
     if not os.path.exists(schema_path):
         vollog.debug(f"Schema for format not found: {schema_path}")
         return False
-    with open(schema_path, "r") as s:
+    with open(schema_path) as s:
         schema = json.load(s)
     return valid(input, schema, use_cache)
 
@@ -66,7 +66,7 @@ def create_json_hash(
         if not os.path.exists(schema_path):
             vollog.debug(f"Schema for format not found: {schema_path}")
             return None
-        with open(schema_path, "r") as s:
+        with open(schema_path) as s:
             schema = json.load(s)
     return hashlib.sha1(
         bytes(json.dumps((input, schema), sort_keys=True), "utf-8")

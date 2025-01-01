@@ -17,8 +17,6 @@ from volatility3.framework.symbols.windows.extensions import pe, shimcache
 from volatility3.plugins import timeliner
 from volatility3.plugins.windows import modules, pslist, vadinfo
 
-# from volatility3.plugins.windows import pslist, vadinfo, modules
-
 vollog = logging.getLogger(__name__)
 
 
@@ -146,7 +144,7 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
             context, layer_name, kernel_symbol_table
         ):
             pid = process.UniqueProcessId
-            vollog.debug("checking process %d" % pid)
+            vollog.debug("checking process %d", pid)
             for vad in vadinfo.VadInfo.list_vads(
                 process, lambda x: x.get_tag() == b"Vad " and x.Protection == 4
             ):
@@ -285,10 +283,9 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
         if not shim_head:
             return
 
-        for shim_entry in shim_head.ListEntry.to_list(
+        yield from shim_head.ListEntry.to_list(
             shimcache_symbol_table + constants.BANG + "SHIM_CACHE_ENTRY", "ListEntry"
-        ):
-            yield shim_entry
+        )
 
     @classmethod
     def try_get_shim_head_at_offset(
@@ -333,7 +330,7 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
         eresource_rel_off = ersrc_size + ((offset - ersrc_size) % ersrc_alignment)
         eresource_offset = offset - eresource_rel_off
 
-        vollog.debug("Constructing ERESOURCE at %s" % hex(eresource_offset))
+        vollog.debug(f"Constructing ERESOURCE at {hex(eresource_offset)}")
         eresource = context.object(
             kernel_symbol_table + constants.BANG + "_ERESOURCE",
             layer_name,

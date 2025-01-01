@@ -92,7 +92,7 @@ class Envars(interfaces.plugins.PluginInterface):
                         except (
                             exceptions.InvalidAddressException,
                             registry.RegistryFormatException,
-                        ) as excp:
+                        ):
                             vollog.log(
                                 constants.LOGLEVEL_VVV,
                                 "Error while parsing global environment variables keys (some keys might be excluded)",
@@ -113,7 +113,7 @@ class Envars(interfaces.plugins.PluginInterface):
                         except (
                             exceptions.InvalidAddressException,
                             registry.RegistryFormatException,
-                        ) as excp:
+                        ):
                             vollog.log(
                                 constants.LOGLEVEL_VVV,
                                 "Error while parsing user environment variables keys (some keys might be excluded)",
@@ -134,7 +134,7 @@ class Envars(interfaces.plugins.PluginInterface):
                     except (
                         exceptions.InvalidAddressException,
                         registry.RegistryFormatException,
-                    ) as excp:
+                    ):
                         vollog.log(
                             constants.LOGLEVEL_VVV,
                             "Error while parsing volatile environment variables keys (some keys might be excluded)",

@@ -60,7 +60,7 @@ class Certificates(interfaces.plugins.PluginInterface):
         open_method: Type[interfaces.plugins.FileHandlerInterface],
     ) -> Optional[interfaces.plugins.FileHandlerInterface]:
         try:
-            dump_name = "{}-{}-{}.crt".format(hive_offset, reg_section, key_hash)
+            dump_name = f"{hive_offset}-{reg_section}-{key_hash}.crt"
             file_handle = open_method(dump_name)
             file_handle.write(certificate_data)
             return file_handle

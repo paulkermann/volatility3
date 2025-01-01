@@ -176,7 +176,7 @@ class QuickTextRenderer(CLIRenderer):
         format_hints.HexBytes: optional(hex_bytes_as_text),
         format_hints.MultiTypeData: quoted_optional(multitypedata_as_text),
         interfaces.renderers.Disassembly: optional(display_disassembly),
-        bytes: optional(lambda x: " ".join([f"{b:02x}" for b in x])),
+        bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
         datetime.datetime: optional(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")),
         "default": optional(lambda x: f"{x}"),
     }
@@ -256,7 +256,7 @@ class CSVRenderer(CLIRenderer):
         format_hints.HexBytes: optional(hex_bytes_as_text),
         format_hints.MultiTypeData: optional(multitypedata_as_text),
         interfaces.renderers.Disassembly: optional(display_disassembly),
-        bytes: optional(lambda x: " ".join([f"{b:02x}" for b in x])),
+        bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
         datetime.datetime: optional(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")),
         "default": optional(lambda x: f"{x}"),
     }
@@ -450,7 +450,7 @@ class JsonRenderer(CLIRenderer):
         format_hints.HexBytes: quoted_optional(hex_bytes_as_text),
         interfaces.renderers.Disassembly: quoted_optional(display_disassembly),
         format_hints.MultiTypeData: quoted_optional(multitypedata_as_text),
-        bytes: optional(lambda x: " ".join([f"{b:02x}" for b in x])),
+        bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
         datetime.datetime: lambda x: (
             x.isoformat()
             if not isinstance(x, interfaces.renderers.BaseAbsentValue)
@@ -467,7 +467,7 @@ class JsonRenderer(CLIRenderer):
 
     def output_result(self, outfd, result):
         """Outputs the JSON data to a file in a particular format"""
-        outfd.write("{}\n".format(json.dumps(result, indent=2, sort_keys=True)))
+        outfd.write(f"{json.dumps(result, indent=2, sort_keys=True)}\n")
 
     def render(self, grid: interfaces.renderers.TreeGrid):
         outfd = sys.stdout

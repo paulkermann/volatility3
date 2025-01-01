@@ -229,7 +229,7 @@ class Module(interfaces.context.ModuleInterface):
     def object(
         self,
         object_type: str,
-        offset: int = None,
+        offset: Optional[int] = None,
         native_layer_name: Optional[str] = None,
         absolute: bool = False,
         **kwargs,
@@ -356,7 +356,7 @@ class SizedModule(Module):
         return size or 0
 
     @property  # type: ignore # FIXME: mypy #5107
-    @functools.lru_cache()
+    @functools.lru_cache
     def hash(self) -> str:
         """Hashes the module for equality checks.
 

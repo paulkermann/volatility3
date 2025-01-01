@@ -13,12 +13,6 @@ from volatility3.plugins.windows import pslist, direct_system_calls
 
 vollog = logging.getLogger(__name__)
 
-try:
-    import capstone
-except ImportError:
-    # The generator of DirectSystemCalls will bail with a warning if capstone is not installed
-    pass
-
 
 class IndirectSystemCalls(direct_system_calls.DirectSystemCalls):
     _required_framework_version = (2, 4, 0)

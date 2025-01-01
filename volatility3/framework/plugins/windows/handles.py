@@ -68,7 +68,12 @@ class Handles(interfaces.plugins.PluginInterface):
             if not self.context.layers[virtual].is_valid(handle_table_entry.Object):
                 return None
             fast_ref = handle_table_entry.Object.cast("_EX_FAST_REF")
-            object_header = fast_ref.dereference().cast("_OBJECT_HEADER")
+
+            try:
+                object_header = fast_ref.dereference().cast("_OBJECT_HEADER")
+            except exceptions.InvalidAddressException:
+                return None
+
             object_header.GrantedAccess = handle_table_entry.GrantedAccess
         except AttributeError:
             # starting with windows 8
@@ -77,16 +82,26 @@ class Handles(interfaces.plugins.PluginInterface):
             )
 
             if is_64bit:
-                if handle_table_entry.ObjectPointerBits == 0:
+                try:
+                    pointer_bits = handle_table_entry.ObjectPointerBits
+                except exceptions.InvalidAddressException:
                     return None
 
-                offset = handle_table_entry.ObjectPointerBits << 4
+                if pointer_bits == 0:
+                    return None
+
+                offset = pointer_bits << 4
 
             else:
-                if handle_table_entry.InfoTable == 0:
+                try:
+                    info_table = handle_table_entry.InfoTable
+                except exceptions.InvalidAddressException:
                     return None
 
-                offset = handle_table_entry.InfoTable & ~7
+                if info_table == 0:
+                    return None
+
+                offset = info_table & ~7
 
             # print("LowValue: {0:#x} Magic: {1:#x} Offset: {2:#x}".format(handle_table_entry.InfoTable, magic, offset))
             object_header = self.context.object(
@@ -94,7 +109,10 @@ class Handles(interfaces.plugins.PluginInterface):
                 virtual,
                 offset=offset,
             )
-            object_header.GrantedAccess = handle_table_entry.GrantedAccessBits
+            try:
+                object_header.GrantedAccess = handle_table_entry.GrantedAccessBits
+            except exceptions.InvalidAddressException:
+                return None
 
         object_header.HandleValue = handle_value
         return object_header
@@ -160,7 +178,7 @@ class Handles(interfaces.plugins.PluginInterface):
             except exceptions.InvalidAddressException:
                 vollog.log(
                     constants.LOGLEVEL_VVV,
-                    f"Cannot access _OBJECT_HEADER Name at {objt.vol.offset:#x}",
+                    f"Cannot access _OBJECT_HEADER Name at {ptr.vol.offset:#x}",
                 )
                 continue
 
@@ -226,9 +244,16 @@ class Handles(interfaces.plugins.PluginInterface):
         masked_offset = offset & layer_object.maximum_address
 
         for entry in table:
+            # This triggered a backtrace in many testing samples
+            # in the level == 0 path
+            # The code above this calls `is_valid` on the `offset`
+            # It is sent but then does not validate `entry` before
+            # sending it to `_get_item`
+            if not self.context.layers[virtual].is_valid(entry.vol.offset):
+                continue
+
             if level > 0:
-                for x in self._make_handle_array(entry, level - 1, depth):
-                    yield x
+                yield from self._make_handle_array(entry, level - 1, depth)
                 depth += 1
             else:
                 handle_multiplier = 4
@@ -264,8 +289,7 @@ class Handles(interfaces.plugins.PluginInterface):
             )
             return None
 
-        for handle_table_entry in self._make_handle_array(TableCode, table_levels):
-            yield handle_table_entry
+        yield from self._make_handle_array(TableCode, table_levels)
 
     def _generator(self, procs):
         kernel = self.context.modules[self.config["kernel"]]

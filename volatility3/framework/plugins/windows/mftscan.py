@@ -275,19 +275,17 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 display_data = True
 
             if display_data:
-                for record in cls.parse_data_record(
+                yield from cls.parse_data_record(
                     mft_record, attr, record_map, return_first_record
-                ):
-                    yield record
+                )
 
     def _generator(self):
-        for record in self.enumerate_mft_records(
+        yield from self.enumerate_mft_records(
             self.context,
             self.config_path,
             self.config["primary"],
             self.parse_mft_records,
-        ):
-            yield record
+        )
 
     def generate_timeline(self):
         for row in self._generator():

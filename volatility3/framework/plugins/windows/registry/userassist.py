@@ -39,7 +39,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 os.path.join(os.path.dirname(__file__), "userassist.json"), "rb"
             ) as fp:
                 self._folder_guids = json.load(fp)
-        except IOError:
+        except OSError:
             vollog.error("Usersassist data file not found")
 
     @classmethod
@@ -308,9 +308,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 )
             except exceptions.InvalidAddressException as excp:
                 vollog.debug(
-                    "Invalid address identified in lower layer {}: {}".format(
-                        excp.layer_name, excp.invalid_address
-                    )
+                    f"Invalid address identified in lower layer {excp.layer_name}: {excp.invalid_address}"
                 )
             except KeyError:
                 vollog.debug(

@@ -215,9 +215,7 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
                     return (virtual_layer_name, kvo, kernel)
                 else:
                     vollog.debug(
-                        "Potential kernel_virtual_offset did not map to expected location: {}".format(
-                            hex(kvo)
-                        )
+                        f"Potential kernel_virtual_offset did not map to expected location: {hex(kvo)}"
                     )
             except exceptions.InvalidAddressException:
                 vollog.debug(

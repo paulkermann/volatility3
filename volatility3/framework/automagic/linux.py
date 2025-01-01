@@ -3,12 +3,10 @@
 #
 
 import logging
-import os
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple
 
 from volatility3.framework import constants, interfaces
 from volatility3.framework.automagic import symbol_cache, symbol_finder
-from volatility3.framework.configuration import requirements
 from volatility3.framework.layers import intel, scanners
 from volatility3.framework.symbols import linux
 
@@ -173,9 +171,7 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
             if aslr_shift & 0xFFF != 0 or kaslr_shift & 0xFFF != 0:
                 continue
             vollog.debug(
-                "Linux ASLR shift values determined: physical {:0x} virtual {:0x}".format(
-                    kaslr_shift, aslr_shift
-                )
+                f"Linux ASLR shift values determined: physical {kaslr_shift:0x} virtual {aslr_shift:0x}"
             )
             return kaslr_shift, aslr_shift
 
@@ -198,5 +194,8 @@ class LinuxSymbolFinder(symbol_finder.SymbolFinder):
     banner_config_key = "kernel_banner"
     operating_system = "linux"
     symbol_class = "volatility3.framework.symbols.linux.LinuxKernelIntermedSymbols"
-    find_aslr = lambda cls, *args: LinuxIntelStacker.find_aslr(*args)[1]
     exclusion_list = ["mac", "windows"]
+
+    @classmethod
+    def find_aslr(cls, *args):
+        return LinuxIntelStacker.find_aslr(*args)[1]

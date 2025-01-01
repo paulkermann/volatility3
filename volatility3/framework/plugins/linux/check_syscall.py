@@ -103,7 +103,7 @@ class Check_syscall(plugins.PluginInterface):
 
         try:
             func_addr = vmlinux.get_symbol(syscall_entry_func).address
-        except exceptions.SymbolError as e:
+        except exceptions.SymbolError:
             # if we can't find the disassemble function then bail and rely on a different method
             return 0
 

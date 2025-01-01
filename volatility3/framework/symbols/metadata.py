@@ -25,7 +25,7 @@ class ProducerMetadata(interfaces.symbols.MetadataInterface):
         return self._json_data.get("version", "")
 
     @property
-    def version(self) -> Optional[Tuple[int]]:
+    def version(self) -> Optional[Tuple[int, ...]]:
         """Returns the version of the ISF file producer"""
         version = self.version_string
         if not version:

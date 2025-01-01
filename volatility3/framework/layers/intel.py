@@ -76,13 +76,13 @@ class Intel(linear.LinearlyMappedLayer):
         self._index_shift = math.ceil(math.log2(struct.calcsize(self._entry_format)))
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def page_shift(cls) -> int:
         """Page shift for the intel memory layers."""
         return cls._page_size_in_bits
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def page_size(cls) -> int:
         """Page size for the intel memory layers.
 
@@ -91,25 +91,25 @@ class Intel(linear.LinearlyMappedLayer):
         return 1 << cls._page_size_in_bits
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def page_mask(cls) -> int:
         """Page mask for the intel memory layers."""
         return ~(cls.page_size - 1)
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def bits_per_register(cls) -> int:
         """Returns the bits_per_register to determine the range of an
         IntelTranslationLayer."""
         return cls._bits_per_register
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def minimum_address(cls) -> int:
         return 0
 
     @classproperty
-    @functools.lru_cache()
+    @functools.lru_cache
     def maximum_address(cls) -> int:
         return (1 << cls._maxvirtaddr) - 1
 
@@ -251,12 +251,7 @@ class Intel(linear.LinearlyMappedLayer):
             if INTEL_TRANSLATION_DEBUGGING:
                 vollog.log(
                     constants.LOGLEVEL_VVVV,
-                    "Entry {} at index {} gives data {} as {}".format(
-                        hex(entry),
-                        hex(index),
-                        hex(struct.unpack(self._entry_format, entry_data)[0]),
-                        name,
-                    ),
+                    f"Entry {hex(entry)} at index {hex(index)} gives data {hex(struct.unpack(self._entry_format, entry_data)[0])} as {name}",
                 )
 
             # Read out the new entry from memory
