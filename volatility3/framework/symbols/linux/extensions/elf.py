@@ -2,13 +2,14 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import logging
 
 from volatility3.framework import constants
 from volatility3.framework.constants.linux import (
     ELF_IDENT,
     ELF_CLASS,
+    KSYM_NAME_LEN,
 )
 from volatility3.framework import objects, interfaces, exceptions
 
@@ -328,21 +329,28 @@ class elf_sym(objects.StructType):
     def cached_strtab(self, cached_strtab):
         self._cached_strtab = cached_strtab
 
-    def get_name(self):
+    def get_name(self, max_size=KSYM_NAME_LEN) -> Optional[str]:
+        """Returns the symbol name
+
+        Args:
+            max_size: Maximum length for a symbol name string. Defaults to KSYM_NAME_LEN (512 bytes).
+
+        Returns:
+            The symbol name
+        """
+
         addr = self._cached_strtab + self.st_name
 
-        # Just get the first 255 characters, it should be enough for a symbol name
-        name_bytes = self._context.layers[self.vol.layer_name].read(addr, 255, pad=True)
-
-        if name_bytes:
-            idx = name_bytes.find(b"\x00")
-            if idx != -1:
-                name_bytes = name_bytes[:idx]
-            return name_bytes.decode("utf-8", errors="ignore")
-        else:
-            # If we cannot read the name from the address space,
-            # we return None.
+        layer = self._context.layers[self.vol.layer_name]
+        name_bytes = layer.read(addr, max_size, pad=True)
+        if not name_bytes:
             return None
+
+        idx = name_bytes.find(b"\x00")
+        if idx != -1:
+            name_bytes = name_bytes[:idx]
+
+        return name_bytes.decode("utf-8", errors="ignore")
 
 
 class elf_phdr(objects.StructType):
