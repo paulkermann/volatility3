@@ -1390,9 +1390,9 @@ class mount(objects.StructType):
             A dentry pointer
         """
         vfsmnt = self.get_vfsmnt_current()
-        dentry = vfsmnt.mnt_root
+        dentry_pointer = vfsmnt.mnt_root
 
-        return dentry
+        return dentry_pointer
 
     def get_dentry_parent(self):
         """Returns the parent root of the mounted tree
