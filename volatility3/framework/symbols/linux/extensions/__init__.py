@@ -1152,19 +1152,15 @@ class struct_file(objects.StructType):
         """Returns a pointer to the dentry associated with this file"""
         if self.has_member("f_path"):
             return self.f_path.dentry
-        elif self.has_member("f_dentry"):
-            return self.f_dentry
-        else:
-            raise AttributeError("Unable to find file -> dentry")
+
+        raise AttributeError("Unable to find file -> dentry")
 
     def get_vfsmnt(self) -> interfaces.objects.ObjectInterface:
         """Returns the fs (vfsmount) where this file is mounted"""
         if self.has_member("f_path"):
             return self.f_path.mnt
-        elif self.has_member("f_vfsmnt"):
-            return self.f_vfsmnt
-        else:
-            raise AttributeError("Unable to find file -> vfs mount")
+
+        raise AttributeError("Unable to find file -> vfs mount")
 
     def get_inode(self) -> interfaces.objects.ObjectInterface:
         """Returns an inode associated with this file"""
