@@ -4,7 +4,7 @@
 import math
 import contextlib
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Tuple, Optional, Union
+from typing import Iterator, List, Tuple, Optional
 
 from volatility3 import framework
 from volatility3.framework import constants, exceptions, interfaces, objects
