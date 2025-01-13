@@ -76,7 +76,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
     """Class with multiple useful linux functions."""
 
-    _version = (2, 2, 0)
+    _version = (2, 3, 0)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -121,7 +121,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         return cls.do_get_path(rdentry, rmnt, dentry, vfsmnt)
 
     @classmethod
-    def do_get_path(cls, rdentry, rmnt, dentry, vfsmnt) -> Union[None, str]:
+    def do_get_path(cls, rdentry, rmnt, dentry, vfsmnt) -> str:
         """Returns a pathname of the mount point or file
         It mimics the Linux kernel prepend_path function.
 
@@ -136,8 +136,19 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
             str: Pathname of the mount point or file
         """
 
+        if not (rdentry and rdentry.is_readable() and rmnt and rmnt.is_readable()):
+            return ""
+
+        if isinstance(vfsmnt, objects.Pointer) and not (rmnt and rmnt.is_readable()):
+            # vfsmnt can be the vfsmount object itself (>=3.3) or a vfsmount * (<3.3)
+            return ""
+
         path_reversed = []
-        while dentry != rdentry or not vfsmnt.is_equal(rmnt):
+        while (
+            dentry
+            and dentry.is_readable()
+            and (dentry != rdentry or not vfsmnt.is_equal(rmnt))
+        ):
             if dentry == vfsmnt.get_mnt_root() or dentry.is_root():
                 # Escaped?
                 if dentry != vfsmnt.get_mnt_root():
@@ -450,6 +461,10 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         type_dec = vmlinux.get_type(type_name)
         member_offset = type_dec.relative_child_offset(member_name)
         container_addr = addr - member_offset
+        layer = vmlinux.context.layers[vmlinux.layer_name]
+        if not layer.is_valid(container_addr):
+            return None
+
         return vmlinux.object(
             object_type=type_name, offset=container_addr, absolute=True
         )
