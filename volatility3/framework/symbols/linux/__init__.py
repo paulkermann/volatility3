@@ -106,8 +106,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         Args:
             task (task_struct): A reference task
             mnt (vfsmount or mount): A mounted filesystem or a mount point.
-                - kernels < 3.3.8 type is 'vfsmount'
-                - kernels >= 3.3.8 type is 'mount'
+                - kernels < 3.3 type is 'vfsmount'
+                - kernels >= 3.3 type is 'mount'
 
         Returns:
             str: Pathname of the mount point relative to the task's root directory.
@@ -129,7 +129,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
             rdentry (dentry *): A pointer to the root dentry
             rmnt (vfsmount *): A pointer to the root vfsmount
             dentry (dentry *): A pointer to the dentry
-            vfsmnt (vfsmount *): A pointer to the vfsmount
+            vfsmnt (vfsmount/vfsmount *): A vfsmount object (kernels >= 3.3) or a
+                vfsmount pointer (kernels < 3.3)
 
         Returns:
             str: Pathname of the mount point or file
