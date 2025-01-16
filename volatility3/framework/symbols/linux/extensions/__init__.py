@@ -1520,17 +1520,17 @@ class vfsmount(objects.StructType):
         """Helper to make sure it is comparing two pointers to 'vfsmount'.
 
         Depending on the kernel version, see 3376f34fff5be9954fd9a9c4fd68f4a0a36d480e,
-        the calling object (self) could be a 'vfsmount *' (<3.3) or a 'vfsmount' (>=3.3).
+        the calling object (self) could be a 'vfsmount \\*' (<3.3) or a 'vfsmount' (>=3.3).
         This way we trust in the framework "auto" dereferencing ability to assure that
         when we reach this point 'self' will be a 'vfsmount' already and self.vol.offset
-        a 'vfsmount *' and not a 'vfsmount **'. The argument must be a 'vfsmount *'.
+        a 'vfsmount \\*' and not a 'vfsmount \\*\\*'. The argument must be a 'vfsmount \\*'.
         Typically, it's called from do_get_path().
 
         Args:
             vfsmount_ptr: A pointer to a 'vfsmount'
 
         Raises:
-            exceptions.VolatilityException: If vfsmount_ptr is not a 'vfsmount *'
+            exceptions.VolatilityException: If vfsmount_ptr is not a 'vfsmount \\*'
 
         Returns:
             'True' if the given argument points to the same 'vfsmount' as 'self'.
