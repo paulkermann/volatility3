@@ -139,7 +139,9 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         if not (rdentry and rdentry.is_readable() and rmnt and rmnt.is_readable()):
             return ""
 
-        if isinstance(vfsmnt, objects.Pointer) and not (rmnt and rmnt.is_readable()):
+        if isinstance(vfsmnt, objects.Pointer) and not (
+            vfsmnt and vfsmnt.is_readable()
+        ):
             # vfsmnt can be the vfsmount object itself (>=3.3) or a vfsmount * (<3.3)
             return ""
 
