@@ -36,7 +36,7 @@ class MountInfo(plugins.PluginInterface):
     """Lists mount points on processes mount namespaces"""
 
     _required_framework_version = (2, 2, 0)
-    _version = (1, 3, 0)
+    _version = (1, 2, 4)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
