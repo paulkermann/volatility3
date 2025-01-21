@@ -53,7 +53,7 @@ class Check_ftrace(interfaces.plugins.PluginInterface):
     additional_description = """Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
     to hook kernel functions and modify their behaviour."""
     _hidden_modules_run = False
-    """Flag to determine if the hidden_modules plugin was run, 
+    """Flag to determine if the hidden_modules plugin was run,
     in the context of this plugin."""
 
     @staticmethod
@@ -147,7 +147,7 @@ class Check_ftrace(interfaces.plugins.PluginInterface):
         # Run hidden_modules plugin if a callback origin couldn't be determined (only done once, results are re-used afterwards)
         if module is None and not cls._hidden_modules_run:
             vollog.info(
-                f"A callback module origin could not be determined. hidden_modules plugin will be run to detect additional modules.",
+                "A callback module origin could not be determined. hidden_modules plugin will be run to detect additional modules.",
             )
             known_modules_addresses = set(
                 context.layers[kernel.layer_name].canonicalize(module.vol.offset)
