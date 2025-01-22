@@ -44,10 +44,19 @@ class Volshell(generic.Volshell):
             )
         )
 
-    def get_process(self, pid=None, v_offset=None, p_offset=None):
-        """Returns the EPROCESS object that matches the pid. If v_offset/p_offset is provided, construct the EPROCESS object at the provided address. Only one parameter is allowed."""
+    def get_process(self, pid=None, virtaddr=None, physaddr=None):
+        """Returns the _EPROCESS object that matches the pid. If a physical or a virtual address is provided, construct the _EPROCESS object at said address. Only one parameter is allowed.
 
-        if sum(1 if x is not None else 0 for x in [pid, v_offset, p_offset]) != 1:
+        Args:
+            pid (int, optional): PID / UniqueProcessId to search for.
+            virtaddr (int, optional): Virtual address to construct object at
+            physaddr (int, optional): Physical address to construct object at
+
+        Returns:
+            ObjectInterface: _EPROCESS Object
+        """
+
+        if sum(1 if x is not None else 0 for x in [pid, virtaddr, physaddr]) != 1:
             print("Only one parameter is accepted")
             return None
 
@@ -61,20 +70,20 @@ class Volshell(generic.Volshell):
 
         eprocess_symbol = kernel.symbol_table_name + constants.BANG + "_EPROCESS"
 
-        if v_offset is not None:
+        if virtaddr is not None:
             eproc = self.context.object(
                 eprocess_symbol,
                 layer_name=kernel_layer_name,
-                offset=v_offset,
+                offset=virtaddr,
             )
 
             return eproc
 
-        if p_offset is not None:
+        if physaddr is not None:
             eproc = self.context.object(
                 eprocess_symbol,
                 layer_name=memory_layer_name,
-                offset=p_offset,
+                offset=physaddr,
                 native_layer_name=kernel_layer_name,
             )
 
