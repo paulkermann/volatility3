@@ -12,9 +12,8 @@ class Modules(interfaces.configuration.VersionableInterface):
 
     framework.require_interface_version(*_required_framework_version)
 
-    @classmethod
+    @staticmethod
     def module_lookup_by_address(
-        cls,
         context: interfaces.context.ContextInterface,
         layer_name: str,
         modules: Iterable[extensions.module],
