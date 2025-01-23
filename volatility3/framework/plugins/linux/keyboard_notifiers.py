@@ -4,6 +4,7 @@
 
 import logging
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
@@ -66,8 +67,10 @@ class Keyboard_notifiers(interfaces.plugins.PluginInterface):
         ):
             call_addr = call_back.notifier_call
 
-            module_name, symbol_name = linux.LinuxUtilities.lookup_module_address(
-                vmlinux, handlers, call_addr
+            module_name, symbol_name = (
+                linux_utilities_modules.Modules.lookup_module_address(
+                    self.context, vmlinux.name, handlers, call_addr
+                )
             )
 
             yield (0, [format_hints.Hex(call_addr), module_name, symbol_name])

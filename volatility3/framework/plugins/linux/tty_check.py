@@ -5,6 +5,7 @@
 import logging
 from typing import List
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import interfaces, renderers, exceptions, constants
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
@@ -79,8 +80,10 @@ class tty_check(plugins.PluginInterface):
 
                 recv_buf = tty_dev.ldisc.ops.receive_buf
 
-                module_name, symbol_name = linux.LinuxUtilities.lookup_module_address(
-                    vmlinux, handlers, recv_buf
+                module_name, symbol_name = (
+                    linux_utilities_modules.Modules.lookup_module_address(
+                        self.context, vmlinux.name, handlers, recv_buf
+                    )
                 )
 
                 yield (0, (name, format_hints.Hex(recv_buf), module_name, symbol_name))

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import logging
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from typing import Iterator, List, Tuple
 from volatility3 import framework
 from volatility3.framework import (
@@ -263,8 +264,10 @@ class AbstractNetfilter(ABC):
         """Helper to obtain the module and symbol name in the format needed for the
         output of this plugin.
         """
-        module_name, symbol_name = linux.LinuxUtilities.lookup_module_address(
-            self.vmlinux, self.handlers, addr
+        module_name, symbol_name = (
+            linux_utilities_modules.Modules.lookup_module_address(
+                self._context, self.vmlinux.name, self.handlers, addr
+            )
         )
 
         if module_name == "UNKNOWN":
