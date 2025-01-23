@@ -174,7 +174,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
             )
         except RegistryFormatException as e:
             vollog.warning(
-                f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}"
+                f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}: {e}"
             )
             return None
         except KeyError:
