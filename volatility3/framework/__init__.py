@@ -24,7 +24,7 @@ if (
     )
 ):
     raise RuntimeError(
-        f"Volatility framework requires python version {".".join(str(x) for x in constants.REQUIRED_PYTHON_VERSION)} or greater"
+        f"Volatility framework requires python version {'.'.join(str(x) for x in constants.REQUIRED_PYTHON_VERSION)} or greater"
     )
 
 # ##
