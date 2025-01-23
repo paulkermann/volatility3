@@ -159,12 +159,20 @@ class SvcScan(interfaces.plugins.PluginInterface):
                 return cast(
                     objects.StructType, hive.get_key(r"CurrentControlSet\Services")
                 )
-            except (KeyError, exceptions.InvalidAddressException, registry.RegistryFormatException):
+            except (
+                KeyError,
+                exceptions.InvalidAddressException,
+                registry.RegistryFormatException,
+            ):
                 try:
                     return cast(
                         objects.StructType, hive.get_key(r"ControlSet001\Services")
                     )
-                except (KeyError, exceptions.InvalidAddressException, registry.RegistryFormatException):
+                except (
+                    KeyError,
+                    exceptions.InvalidAddressException,
+                    registry.RegistryFormatException,
+                ):
                     vollog.log(
                         constants.LOGLEVEL_VVVV,
                         "Could not retrieve any control set from SYSTEM hive",

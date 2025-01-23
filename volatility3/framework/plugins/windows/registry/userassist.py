@@ -173,10 +173,14 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 return_list=True,
             )
         except RegistryFormatException as e:
-            vollog.warning(f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}")
+            vollog.warning(
+                f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}"
+            )
             return None
         except KeyError:
-            vollog.warning(f"UserAssist key not found in {hive_name} at {hive.hive_offset:#x}")
+            vollog.warning(
+                f"UserAssist key not found in {hive_name} at {hive.hive_offset:#x}"
+            )
             return None
 
         if not userassist_node_path:

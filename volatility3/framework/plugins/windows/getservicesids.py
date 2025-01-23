@@ -87,10 +87,18 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
             # Get ControlSet\Services.
             try:
                 services = hive.get_key(r"CurrentControlSet\Services")
-            except (KeyError, exceptions.InvalidAddressException, registry.RegistryFormatException):
+            except (
+                KeyError,
+                exceptions.InvalidAddressException,
+                registry.RegistryFormatException,
+            ):
                 try:
                     services = hive.get_key(r"ControlSet001\Services")
-                except (KeyError, exceptions.InvalidAddressException, registry.RegistryFormatException):
+                except (
+                    KeyError,
+                    exceptions.InvalidAddressException,
+                    registry.RegistryFormatException,
+                ):
                     continue
 
             if services:

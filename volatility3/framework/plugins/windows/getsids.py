@@ -158,7 +158,11 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                             layers.registry.RegistryFormatException,
                         ):
                             continue
-            except (KeyError, exceptions.InvalidAddressException, layers.registry.RegistryFormatException):
+            except (
+                KeyError,
+                exceptions.InvalidAddressException,
+                layers.registry.RegistryFormatException,
+            ):
                 continue
 
         return sids
