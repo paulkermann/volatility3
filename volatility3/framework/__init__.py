@@ -5,6 +5,7 @@
 # Check the python version to ensure it's suitable
 import glob
 import sys
+from volatility3.framework import check_python_version as check_python_version
 import zipfile
 import importlib
 import inspect
@@ -57,7 +58,7 @@ class NonInheritable:
         self.default_value = value
         self.cls = cls
 
-    def __get__(self, obj: Any, get_type: Optional[Type] = None) -> Any:
+    def __get__(self, obj: Any, get_type: Type = Optional[None]) -> Any:
         if type is self.cls:
             if hasattr(self.default_value, "__get__"):
                 return self.default_value.__get__(obj, get_type)
