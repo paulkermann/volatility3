@@ -138,11 +138,11 @@ class CM_KEY_BODY(objects.StructType):
         kcb = self.KeyControlBlock
         while kcb.ParentKcb:
             if kcb.ParentKcb.vol.offset in seen:
-                return ""
+                return None
             seen.add(kcb.ParentKcb.vol.offset)
 
             if len(output) > 128:
-                return ""
+                return None
 
             if kcb.NameBlock.Name is None:
                 break
