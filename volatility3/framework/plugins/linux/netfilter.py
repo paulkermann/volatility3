@@ -691,6 +691,11 @@ class Netfilter(interfaces.plugins.PluginInterface):
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
             ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(1, 0, 0),
+            ),
             requirements.PluginRequirement(
                 name="lsmod", plugin=lsmod.Lsmod, version=cls._required_lsmod_version
             ),
