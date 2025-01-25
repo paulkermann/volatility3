@@ -962,56 +962,55 @@ class LIST_ENTRY(objects.StructType, collections.abc.Iterable):
     ) -> Iterator[interfaces.objects.ObjectInterface]:
         """Returns an iterator of the entries in the list."""
 
-        layer = layer or self.vol.layer_name
+        layer_name = layer or self.vol.layer_name
+        native_layer_name = layer_name or self.vol.native_layer_name
+
+        trans_layer = self._context.layers[layer_name]
+        if not trans_layer.is_valid(self.vol.offset):
+            return None
 
         relative_offset = self._context.symbol_space.get_type(
             symbol_type
         ).relative_child_offset(member)
 
-        direction = "Blink"
-        if forward:
-            direction = "Flink"
+        direction = "Flink" if forward else "Blink"
 
-        trans_layer = self._context.layers[layer]
-
-        try:
-            is_valid = trans_layer.is_valid(self.vol.offset)
-            if not is_valid:
-                return None
-
-            link = getattr(self, direction).dereference()
-        except exceptions.InvalidAddressException:
+        link_ptr = getattr(self, direction)
+        if not (link_ptr and link_ptr.is_readable()):
             return None
+        link = link_ptr.dereference()
 
         if not sentinel:
+            obj_offset = self.vol.offset - relative_offset
+            if not trans_layer.is_valid(obj_offset):
+                return None
+
             yield self._context.object(
                 symbol_type,
-                layer,
-                offset=self.vol.offset - relative_offset,
-                native_layer_name=layer or self.vol.native_layer_name,
+                layer_name,
+                offset=obj_offset,
+                native_layer_name=native_layer_name,
             )
 
         seen = {self.vol.offset}
         while link.vol.offset not in seen:
             obj_offset = link.vol.offset - relative_offset
-
             if not trans_layer.is_valid(obj_offset):
                 return None
 
-            obj = self._context.object(
+            yield self._context.object(
                 symbol_type,
-                layer,
+                layer_name,
                 offset=obj_offset,
-                native_layer_name=layer or self.vol.native_layer_name,
+                native_layer_name=native_layer_name,
             )
-            yield obj
 
             seen.add(link.vol.offset)
 
-            try:
-                link = getattr(link, direction).dereference()
-            except exceptions.InvalidAddressException:
+            link_ptr = getattr(link, direction)
+            if not (link_ptr and link_ptr.is_readable()):
                 return None
+            link = link_ptr.dereference()
 
     def __iter__(self) -> Iterator[interfaces.objects.ObjectInterface]:
         return self.to_list(self.vol.parent.vol.type_name, self.vol.member_name)

@@ -304,8 +304,8 @@ class ModuleInterface(interfaces.configuration.ConfigurableInterface):
 
     @property
     @abstractmethod
-    def symbols(self) -> List:
-        """Lists the symbols contained in the symbol table for this module"""
+    def symbols(self) -> Iterable[str]:
+        """Returns an iterable of the symbols contained in the symbol table for this module"""
         raise NotImplementedError("Symbols property has not been implemented.")
 
     @abstractmethod

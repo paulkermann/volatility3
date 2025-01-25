@@ -411,18 +411,27 @@ class Version1Format(ISFormatTable):
 
     @property
     def symbols(self) -> Iterable[str]:
-        """Returns an iterator of the symbol names."""
-        return list(self._json_object.get("symbols", {}))
+        """Returns an iterable (KeysView) of the available symbol names."""
+        return self._json_object.get("symbols", {}).keys()
 
     @property
-    def enumerations(self) -> Iterable[str]:
-        """Returns an iterator of the available enumerations."""
-        return list(self._json_object.get("enums", {}))
+    def enumerations(self) -> Iterable[Any]:
+        """Returns an iterable (KeysView) of the available enumerations."""
+        return self._json_object.get("enums", {}).keys()
 
     @property
     def types(self) -> Iterable[str]:
-        """Returns an iterator of the symbol type names."""
-        return list(self._json_object.get("user_types", {})) + list(self.natives.types)
+        """Returns an iterable (KeysView) of the available symbol type names."""
+        # We use ** instead of
+        # `set(self._json_object.get("user_types", {}).keys()).union(self.natives.types)`
+        # because converting user_types dict to a set is costly.
+        # It is more efficient to convert the (very small) self.natives.types set to a dict.
+        # FIXME: On Python3.8 support drop, merge the two dicts using the merge operator:
+        # (self._json_object.get("user_types", {}) | dict.fromkeys(self.natives.types)).keys()
+        return {
+            **self._json_object.get("user_types", {}),
+            **dict.fromkeys(self.natives.types),
+        }.keys()
 
     def get_type_class(self, name: str) -> Type[interfaces.objects.ObjectInterface]:
         return self._overrides.get(name, objects.AggregateType)

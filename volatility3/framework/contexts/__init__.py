@@ -338,7 +338,7 @@ class Module(interfaces.context.ModuleInterface):
         )
 
     @property
-    def symbols(self):
+    def symbols(self) -> Iterable[str]:
         return self.context.symbol_space[self.symbol_table_name].symbols
 
     get_symbol = get_module_wrapper("get_symbol")

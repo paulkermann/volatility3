@@ -76,14 +76,14 @@ class Envars(interfaces.plugins.PluginInterface):
                     "CurrentControlSet\\Control\\Session Manager\\Environment"
                 )
                 sys = True
-            except KeyError:
-                with contextlib.suppress(KeyError):
+            except (KeyError, registry.RegistryFormatException):
+                with contextlib.suppress(KeyError, registry.RegistryFormatException):
                     key = hive.get_key(
                         "ControlSet001\\Control\\Session Manager\\Environment"
                     )
                     sys = True
             if sys:
-                with contextlib.suppress(KeyError):
+                with contextlib.suppress(KeyError, registry.RegistryFormatException):
                     for node in key.get_values():
                         try:
                             value_node_name = node.get_name()
@@ -100,11 +100,11 @@ class Envars(interfaces.plugins.PluginInterface):
                             continue
 
             ## The user-specific variables
-            with contextlib.suppress(KeyError):
+            with contextlib.suppress(KeyError, registry.RegistryFormatException):
                 key = hive.get_key("Environment")
                 ntuser = True
             if ntuser:
-                with contextlib.suppress(KeyError):
+                with contextlib.suppress(KeyError, registry.RegistryFormatException):
                     for node in key.get_values():
                         try:
                             value_node_name = node.get_name()
@@ -123,7 +123,7 @@ class Envars(interfaces.plugins.PluginInterface):
             ## The volatile user variables
             try:
                 key = hive.get_key("Volatile Environment")
-            except KeyError:
+            except (KeyError, registry.RegistryFormatException):
                 continue
             try:
                 for node in key.get_values():

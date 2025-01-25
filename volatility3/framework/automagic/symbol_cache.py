@@ -301,6 +301,13 @@ class SqliteCache(CacheManagerInterface):
         This also updates remote locations based on a cache timeout.
 
         """
+        if progress_callback is None:
+
+            def dummy_progress(*args, **kargs) -> None:
+                return None
+
+            progress_callback = dummy_progress
+
         on_disk_locations = set(
             [
                 filename
