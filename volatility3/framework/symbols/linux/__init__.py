@@ -10,11 +10,16 @@ from typing import Iterator, List, Tuple, Optional, Union
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3 import framework
-from volatility3.framework import constants, exceptions, interfaces, objects
+from volatility3.framework import (
+    constants,
+    exceptions,
+    interfaces,
+    objects,
+    Deprecation,
+)
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.linux import extensions
-from volatility3.framework.configuration import requirements
 
 vollog = logging.getLogger(__name__)
 
@@ -455,8 +460,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
     ## Deprecated APIs ##
     @classmethod
-    @requirements.deprecated_method(
-        replacement="volatility3.framework.symbols.linux.utilities.modules.Modules.mask_mods_list"
+    @Deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.mask_mods_list
     )
     def mask_mods_list(
         cls,
@@ -472,8 +477,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         return linux_utilities_modules.Modules.mask_mods_list(context, layer_name, mods)
 
     @classmethod
-    @requirements.deprecated_method(
-        replacement="volatility3.framework.symbols.linux.utilities.modules.Modules.lookup_module_address"
+    @Deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.lookup_module_address
     )
     def lookup_module_address(
         cls,

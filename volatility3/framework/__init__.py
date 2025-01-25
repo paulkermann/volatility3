@@ -11,7 +11,8 @@ import inspect
 import logging
 import os
 import traceback
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TypeVar
+import functools
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, TypeVar
 
 from volatility3.framework import constants, interfaces
 
@@ -50,6 +51,32 @@ def require_interface_version(*args) -> None:
                         ".".join(str(x) for x in args[0:2]),
                     )
                 )
+
+
+class Deprecation:
+    """Deprecation related methods."""
+
+    @staticmethod
+    def deprecated_method(replacement: Callable, additional_information: str = ""):
+        """A decorator for marking functions as deprecated.
+
+        Args:
+            replacement: The replacement function overriding the deprecated API, in the form of a Callable (typically a method)
+            additional_information: Information appended at the end of the deprecation message
+        """
+
+        def decorator(deprecated_func):
+            @functools.wraps(deprecated_func)
+            def wrapper(*args, **kwargs):
+                nonlocal replacement, additional_information
+                deprecation_msg = f"Method \"{deprecated_func.__module__ + '.' + deprecated_func.__name__}\" is deprecated, use \"{replacement.__module__ + '.' + replacement.__name__}\" instead. {additional_information}"
+                vollog.warning(deprecation_msg)
+                # Return the wrapped function with its original arguments
+                return deprecated_func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
 
 
 class NonInheritable:
