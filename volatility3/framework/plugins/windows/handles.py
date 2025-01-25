@@ -341,7 +341,7 @@ class Handles(interfaces.plugins.PluginInterface):
                         try:
                             obj_name = entry.NameInfo.Name.String
                         except (ValueError, exceptions.InvalidAddressException):
-                            obj_name = ""
+                            obj_name = None
 
                 except exceptions.InvalidAddressException:
                     vollog.log(
@@ -359,7 +359,7 @@ class Handles(interfaces.plugins.PluginInterface):
                         format_hints.Hex(entry.HandleValue),
                         obj_type,
                         format_hints.Hex(entry.GrantedAccess),
-                        obj_name,
+                        obj_name or renderers.NotAvailableValue(),
                     ),
                 )
 
