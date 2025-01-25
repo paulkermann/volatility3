@@ -346,6 +346,23 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
                 yield fd_num, filp, full_path
 
     @classmethod
+    @Deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.mask_mods_list
+    )
+    def mask_mods_list(
+        cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
+        mods: Iterator[interfaces.objects.ObjectInterface],
+    ) -> List[Tuple[str, int, int]]:
+        """
+        DEPRECATED: use "volatility3.framework.symbols.linux.utilities.modules.Modules.mask_mods_list" instead.
+
+        A helper function to mask the starting and end address of kernel modules
+        """
+        return linux_utilities_modules.Modules.mask_mods_list(context, layer_name, mods)
+
+    @classmethod
     def generate_kernel_handler_info(
         cls,
         context: interfaces.context.ContextInterface,
@@ -370,6 +387,26 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
             (constants.linux.KERNEL_NAME, start_addr, end_addr)
         ] + linux_utilities_modules.Modules.mask_mods_list(
             context, kernel.layer_name, mods_list
+        )
+
+    @classmethod
+    @Deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.lookup_module_address
+    )
+    def lookup_module_address(
+        cls,
+        kernel_module: interfaces.context.ModuleInterface,
+        handlers: List[Tuple[str, int, int]],
+        target_address: int,
+    ) -> Tuple[str, str]:
+        """
+        DEPRECATED: use "volatility3.framework.symbols.linux.utilities.modules.Modules.lookup_module_address" instead.
+
+        Searches between the start and end address of the kernel module using target_address.
+        Returns the module and symbol name of the address provided.
+        """
+        return linux_utilities_modules.Modules.lookup_module_address(
+            kernel_module.context, kernel_module.name, handlers, target_address
         )
 
     @classmethod
@@ -456,44 +493,6 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         code_bytes_length = (code.bit_length() + 7) // 8
         return "".join(
             [chr((code >> (i * 8)) & 0xFF) for i in range(code_bytes_length)]
-        )
-
-    ## Deprecated APIs ##
-    @classmethod
-    @Deprecation.deprecated_method(
-        replacement=linux_utilities_modules.Modules.mask_mods_list
-    )
-    def mask_mods_list(
-        cls,
-        context: interfaces.context.ContextInterface,
-        layer_name: str,
-        mods: Iterator[interfaces.objects.ObjectInterface],
-    ) -> List[Tuple[str, int, int]]:
-        """
-        DEPRECATED: use "volatility3.framework.symbols.linux.utilities.modules.Modules.mask_mods_list" instead.
-
-        A helper function to mask the starting and end address of kernel modules
-        """
-        return linux_utilities_modules.Modules.mask_mods_list(context, layer_name, mods)
-
-    @classmethod
-    @Deprecation.deprecated_method(
-        replacement=linux_utilities_modules.Modules.lookup_module_address
-    )
-    def lookup_module_address(
-        cls,
-        kernel_module: interfaces.context.ModuleInterface,
-        handlers: List[Tuple[str, int, int]],
-        target_address: int,
-    ) -> Tuple[str, str]:
-        """
-        DEPRECATED: use "volatility3.framework.symbols.linux.utilities.modules.Modules.lookup_module_address" instead.
-
-        Searches between the start and end address of the kernel module using target_address.
-        Returns the module and symbol name of the address provided.
-        """
-        return linux_utilities_modules.Modules.lookup_module_address(
-            kernel_module.context, kernel_module.name, handlers, target_address
         )
 
 
