@@ -13,8 +13,9 @@ class Modules(interfaces.configuration.VersionableInterface):
 
     framework.require_interface_version(*_required_framework_version)
 
-    @staticmethod
+    @classmethod
     def mask_mods_list(
+        cls,
         context: interfaces.context.ContextInterface,
         layer_name: str,
         mods: Iterator[interfaces.objects.ObjectInterface],
@@ -33,8 +34,9 @@ class Modules(interfaces.configuration.VersionableInterface):
             for mod in mods
         ]
 
-    @staticmethod
+    @classmethod
     def lookup_module_address(
+        cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
         handlers: List[Tuple[str, int, int]],
