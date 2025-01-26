@@ -69,8 +69,8 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     additional_description = """Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
     to hook kernel functions and modify their behaviour."""
 
-    @staticmethod
-    def get_requirements() -> List[interfaces.configuration.RequirementInterface]:
+    @classmethod
+    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
             requirements.ModuleRequirement(
                 name="kernel",
@@ -98,8 +98,9 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def extract_hash_table_filters(
+        cls,
         ftrace_ops: interfaces.objects.ObjectInterface,
     ) -> Optional[Iterable[interfaces.objects.ObjectInterface]]:
         """Wrap the process of walking to every ftrace_func_entry of an ftrace_ops.
@@ -231,9 +232,9 @@ if the "hidden_modules" key is present in known_modules.
 
         return None
 
-    @staticmethod
+    @classmethod
     def iterate_ftrace_ops_list(
-        context: interfaces.context.ContextInterface, kernel_name: str
+        cls, context: interfaces.context.ContextInterface, kernel_name: str
     ) -> Optional[Iterable[interfaces.objects.ObjectInterface]]:
         """Iterate over (ftrace_ops *)ftrace_ops_list.
 
