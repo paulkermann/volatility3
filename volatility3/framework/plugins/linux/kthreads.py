@@ -4,6 +4,7 @@
 import logging
 from typing import List
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
@@ -20,7 +21,7 @@ class Kthreads(plugins.PluginInterface):
     """Enumerates kthread functions"""
 
     _required_framework_version = (2, 11, 0)
-    _version = (1, 0, 2)
+    _version = (1, 0, 3)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -29,6 +30,11 @@ class Kthreads(plugins.PluginInterface):
                 name="kernel",
                 description="Linux kernel",
                 architectures=architectures.LINUX_ARCHS,
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 1, 0)
@@ -88,8 +94,10 @@ class Kthreads(plugins.PluginInterface):
                 if kthread.has_member("full_name")
                 else task_name
             )
-            module_name, symbol_name = linux.LinuxUtilities.lookup_module_address(
-                vmlinux, handlers, threadfn
+            module_name, symbol_name = (
+                linux_utilities_modules.Modules.lookup_module_address(
+                    self.context, vmlinux.name, handlers, threadfn
+                )
             )
 
             fields = [
