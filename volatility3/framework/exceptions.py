@@ -162,4 +162,4 @@ class VersionMismatchException(VolatilityException):
         self.failure_reason = failure_reason
 
     def __str__(self):
-        return f"{self.source_component.__module__+ '.' + self.source_component.__qualname__}: Version {self.target_version} dependency on {self.target_component.__module__+ '.' + self.target_component.__qualname__} {self.target_component.version} unmet."
+        return f"{self.source_component.__module__+ '.' + self.source_component.__qualname__}: Version {self.target_version} dependency on {self.target_component.__module__+ '.' + self.target_component.__name__} {self.target_component.version} unmet."
