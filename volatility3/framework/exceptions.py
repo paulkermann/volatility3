@@ -153,7 +153,7 @@ class VersionMismatchException(VolatilityException):
             source_component: The component that required the target component
             target_component: The component that is required. Must inherit from VersionableInterface
             target_version: The version of the target component that was required, and ultimately was not satisfied
-            failure_reason: A detailed failure reason to enhande debugging and bug tracking
+            failure_reason: A detailed failure reason to enhance debugging and bug tracking
         """
         super().__init__(*args)
         self.source_component = source_component
