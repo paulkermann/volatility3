@@ -573,6 +573,8 @@ class CommandLine:
         fulltrace = traceback.TracebackException.from_exception(excp).format(chain=True)
         vollog.debug("".join(fulltrace))
 
+        file_a_bug_msg = f"Please re-run with -vvv and file a bug with the output at {constants.BUG_URL}"
+
         if isinstance(excp, exceptions.InvalidAddressException):
             general = "Volatility was unable to read a requested page:"
             if isinstance(excp, exceptions.SwappedInvalidAddressException):
@@ -617,9 +619,7 @@ class CommandLine:
         elif isinstance(excp, exceptions.LayerException):
             general = f"Volatility experienced a layer-related issue: {excp.layer_name}"
             detail = f"{excp}"
-            caused_by = [
-                "A faulty layer implementation (re-run with -vvv and file a bug)"
-            ]
+            caused_by = [f"A faulty layer implementation. {file_a_bug_msg}"]
         elif isinstance(excp, exceptions.MissingModuleException):
             general = f"Volatility could not import a necessary module: {excp.module}"
             detail = f"{excp}"
@@ -630,13 +630,17 @@ class CommandLine:
             general = "Volatility experienced an issue when rendering the output:"
             detail = f"{excp}"
             caused_by = ["An invalid renderer option, such as no visible columns"]
+        elif isinstance(excp, exceptions.VersionMismatchException):
+            general = "A version mismatch was detected between two components:"
+            detail = f"{excp}"
+            caused_by = [
+                excp.failure_reason or "An outdated API caller, such as a method.",
+                file_a_bug_msg,
+            ]
         else:
             general = "Volatility encountered an unexpected situation."
             detail = ""
-            caused_by = [
-                "Please re-run using with -vvv and file a bug with the output",
-                f"at {constants.BUG_URL}",
-            ]
+            caused_by = [file_a_bug_msg]
 
         # Code that actually renders the exception
         output = sys.stderr

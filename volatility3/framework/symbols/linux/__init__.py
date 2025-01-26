@@ -8,8 +8,15 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Iterator, List, Tuple, Optional, Union
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3 import framework
-from volatility3.framework import constants, exceptions, interfaces, objects
+from volatility3.framework import (
+    constants,
+    exceptions,
+    interfaces,
+    objects,
+    Deprecation,
+)
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.linux import extensions
@@ -81,7 +88,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
     """Class with multiple useful linux functions."""
 
-    _version = (2, 2, 0)
+    _version = (2, 2, 1)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -339,6 +346,10 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
                 yield fd_num, filp, full_path
 
     @classmethod
+    @Deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.mask_mods_list,
+        replacement_version=(1, 0, 0),
+    )
     def mask_mods_list(
         cls,
         context: interfaces.context.ContextInterface,
@@ -346,18 +357,11 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         mods: Iterator[interfaces.objects.ObjectInterface],
     ) -> List[Tuple[str, int, int]]:
         """
+        DEPRECATED: use "volatility3.framework.symbols.linux.utilities.modules.Modules.mask_mods_list" instead.
+
         A helper function to mask the starting and end address of kernel modules
         """
-        mask = context.layers[layer_name].address_mask
-
-        return [
-            (
-                utility.array_to_string(mod.name),
-                mod.get_module_base() & mask,
-                (mod.get_module_base() & mask) + mod.get_core_size(),
-            )
-            for mod in mods
-        ]
+        return linux_utilities_modules.Modules.mask_mods_list(context, layer_name, mods)
 
     @classmethod
     def generate_kernel_handler_info(
@@ -382,41 +386,30 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
         return [
             (constants.linux.KERNEL_NAME, start_addr, end_addr)
-        ] + LinuxUtilities.mask_mods_list(context, kernel.layer_name, mods_list)
+        ] + linux_utilities_modules.Modules.mask_mods_list(
+            context, kernel.layer_name, mods_list
+        )
 
     @classmethod
+    @Deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.lookup_module_address,
+        replacement_version=(1, 0, 0),
+    )
     def lookup_module_address(
         cls,
         kernel_module: interfaces.context.ModuleInterface,
         handlers: List[Tuple[str, int, int]],
         target_address: int,
-    ):
+    ) -> Tuple[str, str]:
         """
+        DEPRECATED: use "volatility3.framework.symbols.linux.utilities.modules.Modules.lookup_module_address" instead.
+
         Searches between the start and end address of the kernel module using target_address.
         Returns the module and symbol name of the address provided.
         """
-
-        mod_name = "UNKNOWN"
-        symbol_name = "N/A"
-
-        for name, start, end in handlers:
-            if start <= target_address <= end:
-                mod_name = name
-                if name == constants.linux.KERNEL_NAME:
-                    symbols = list(
-                        kernel_module.get_symbols_by_absolute_location(target_address)
-                    )
-
-                    if len(symbols):
-                        symbol_name = (
-                            symbols[0].split(constants.BANG)[1]
-                            if constants.BANG in symbols[0]
-                            else symbols[0]
-                        )
-
-                break
-
-        return mod_name, symbol_name
+        return linux_utilities_modules.Modules.lookup_module_address(
+            kernel_module.context, kernel_module.name, handlers, target_address
+        )
 
     @classmethod
     def walk_internal_list(cls, vmlinux, struct_name, list_member, list_start):

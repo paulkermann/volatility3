@@ -10,6 +10,7 @@ from typing import List
 
 from volatility3.framework import renderers, interfaces, constants, exceptions
 from volatility3.framework.configuration import requirements
+from volatility3.framework.layers import registry
 from volatility3.plugins.windows.registry import hivelist
 
 vollog = logging.getLogger(__name__)
@@ -86,10 +87,18 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
             # Get ControlSet\Services.
             try:
                 services = hive.get_key(r"CurrentControlSet\Services")
-            except (KeyError, exceptions.InvalidAddressException):
+            except (
+                KeyError,
+                exceptions.InvalidAddressException,
+                registry.RegistryFormatException,
+            ):
                 try:
                     services = hive.get_key(r"ControlSet001\Services")
-                except (KeyError, exceptions.InvalidAddressException):
+                except (
+                    KeyError,
+                    exceptions.InvalidAddressException,
+                    registry.RegistryFormatException,
+                ):
                     continue
 
             if services:

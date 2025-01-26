@@ -37,7 +37,7 @@ cloud = ["gcsfs>=2024.10.0", "s3fs>=2024.10.0"]
 dev = [
     "volatility3[full,cloud]",
     "jsonschema>=4.23.0,<5",
-    "pyinstaller>=6.11.0,<7",
+    "pyinstaller>=6.5.0,<7",
     "pyinstaller-hooks-contrib>=2024.9",
     "types-jsonschema>=4.23.0,<5",
 ]
@@ -51,8 +51,8 @@ test = [
 
 docs = [
     "volatility3[dev]",
-    "sphinx>=8.0.0,<7",
-    "sphinx-autodoc-typehints>=2.5.0,<3",
+    "sphinx>=4.0.0,<9",
+    "sphinx-autodoc-typehints>=2.0.0,<3",
     "sphinx-rtd-theme>=3.0.1,<4",
 ]
 
