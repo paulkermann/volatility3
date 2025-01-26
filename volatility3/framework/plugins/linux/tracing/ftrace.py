@@ -9,12 +9,12 @@ from typing import Dict, List, Iterable, Optional
 from enum import auto, IntFlag
 from dataclasses import dataclass
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.plugins.linux import hidden_modules, modxview
 from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
 from volatility3.framework.symbols.linux import extensions
-from volatility3.framework.symbols.linux.utilities import modules as linux_utilities_modules
 from volatility3.framework.constants import architectures
 
 vollog = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(1, 0, 0),
+                version=(1, 1, 0),
             ),
             requirements.PluginRequirement(
                 name="modxview", plugin=modxview.Modxview, version=(1, 0, 0)
