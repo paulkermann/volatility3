@@ -348,7 +348,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
     @classmethod
     @Deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.mask_mods_list,
-        replacement_base_class_required_version=(1, 0, 0),
+        replacement_version=(1, 0, 0),
     )
     def mask_mods_list(
         cls,
@@ -393,7 +393,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
     @classmethod
     @Deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.lookup_module_address,
-        replacement_base_class_required_version=(1, 0, 0),
+        replacement_version=(1, 0, 0),
     )
     def lookup_module_address(
         cls,
