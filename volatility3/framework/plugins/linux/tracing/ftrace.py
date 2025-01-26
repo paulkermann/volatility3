@@ -14,7 +14,7 @@ from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
 from volatility3.framework.symbols.linux import extensions
-from volatility3.framework.symbols.linux.utilities import modules as modules_utilities
+from volatility3.framework.symbols.linux.utilities import modules as linux_utilities_modules
 from volatility3.framework.constants import architectures
 
 vollog = logging.getLogger(__name__)
@@ -78,8 +78,8 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
                 architectures=architectures.LINUX_ARCHS,
             ),
             requirements.VersionRequirement(
-                name="modules_utilities",
-                component=modules_utilities.Modules,
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
                 version=(1, 0, 0),
             ),
             requirements.PluginRequirement(
@@ -153,7 +153,7 @@ if the "hidden_modules" key is present in known_modules.
         callback_symbol = module_address = module_name = None
 
         # Try to lookup within the known modules if the callback address fits
-        module = modules_utilities.Modules.module_lookup_by_address(
+        module = linux_utilities_modules.Modules.module_lookup_by_address(
             context,
             kernel.layer_name,
             modxview.Modxview.flatten_run_modules_results(known_modules),
@@ -189,7 +189,7 @@ if the "hidden_modules" key is present in known_modules.
             )
             # Lookup the updated list to see if hidden_modules was able
             # to find the missing module
-            module = modules_utilities.Modules.module_lookup_by_address(
+            module = linux_utilities_modules.Modules.module_lookup_by_address(
                 context,
                 kernel.layer_name,
                 modxview.Modxview.flatten_run_modules_results(known_modules),
