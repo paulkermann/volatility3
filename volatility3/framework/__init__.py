@@ -77,14 +77,12 @@ class Deprecation:
             def wrapper(*args, **kwargs):
                 nonlocal replacement, replacement_version, additional_information
                 # Prevent version mismatches between deprecated (proxy) methods and the ones they proxy
-                if replacement_version is not None and callable(replacement):
-                    # example: replacement = volatility3.MyClass.my_dummy_function
-                    # "MyClass.my_dummy_function" -> "MyClass"
-                    replacement_base_class_name = replacement.__qualname__.split(".")[0]
-                    # replacement.__globals__ example: {'MyClass': <class 'volatility3.MyClass'>}
-                    replacement_base_class = replacement.__globals__.get(
-                        replacement_base_class_name
-                    )
+                if (
+                    replacement_version is not None
+                    and callable(replacement)
+                    and hasattr(replacement, "__self__")
+                ):
+                    replacement_base_class = replacement.__self__
 
                     # Verify that the base class inherits from VersionableInterface
                     if inspect.isclass(replacement_base_class) and issubclass(
@@ -99,7 +97,7 @@ class Deprecation:
                                 deprecated_func,
                                 replacement_base_class,
                                 replacement_version,
-                                "A deprecated method was unable to proxy the call to its replacement",
+                                "This is a bug, the deprecated call needs to be removed and the caller needs to update their code to use the new method.",
                             )
 
                 deprecation_msg = f"Method \"{deprecated_func.__module__ + '.' + deprecated_func.__qualname__}\" is deprecated, use \"{replacement.__module__ + '.' + replacement.__qualname__}\" instead. {additional_information}"
