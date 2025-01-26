@@ -104,7 +104,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (1, 0, 2)
+    _version = (1, 0, 3)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -360,8 +360,8 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             yield description, timeliner.TimeLinerType.MODIFIED, inode_out.modification_time
             yield description, timeliner.TimeLinerType.CHANGED, inode_out.change_time
 
-    @staticmethod
-    def format_fields_with_headers(headers, generator):
+    @classmethod
+    def format_fields_with_headers(cls, headers, generator):
         """Uses the headers type to cast the fields obtained from the generator"""
         for level, fields in generator:
             formatted_fields = []
@@ -405,7 +405,7 @@ class InodePages(plugins.PluginInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (2, 0, 1)
+    _version = (2, 0, 2)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -436,8 +436,9 @@ class InodePages(plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def write_inode_content_to_file(
+        cls,
         inode: interfaces.objects.ObjectInterface,
         filename: str,
         open_method: Type[interfaces.plugins.FileHandlerInterface],

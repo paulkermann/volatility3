@@ -35,7 +35,9 @@ class CapabilitiesData:
     cap_permitted: interfaces.objects.ObjectInterface
     cap_effective: interfaces.objects.ObjectInterface
     cap_bset: interfaces.objects.ObjectInterface
-    cap_ambient: interfaces.objects.ObjectInterface
+    cap_ambient: (
+        interfaces.objects.ObjectInterface | interfaces.renderers.BaseAbsentValue
+    )
 
     def astuple(self) -> Tuple:
         """Returns a shallow copy of the capability sets in a tuple.
