@@ -9,7 +9,7 @@ from volatility3.framework.symbols.linux import extensions
 class Modules(interfaces.configuration.VersionableInterface):
     """Kernel modules related utilities."""
 
-    _version = (1, 0, 0)
+    _version = (1, 1, 0)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
