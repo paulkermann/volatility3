@@ -84,7 +84,7 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
 
             if not vad_maps_to_scan:
                 vollog.warning(
-                    f"No VADs were found for task {task.UniqueProcessID}, not scanning"
+                    f"No VADs were found for task {task.UniqueProcessId}, not scanning"
                 )
                 continue
 
