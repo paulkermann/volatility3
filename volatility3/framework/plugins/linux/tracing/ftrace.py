@@ -62,12 +62,13 @@ class ParsedFtraceOps:
 
 
 class CheckFtrace(interfaces.plugins.PluginInterface):
-    """Detect ftrace hooking"""
+    """Detect ftrace hooking
+
+    Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
+    to hook kernel functions and modify their behaviour."""
 
     _version = (1, 0, 0)
     _required_framework_version = (2, 19, 0)
-    additional_description = """Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
-    to hook kernel functions and modify their behaviour."""
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
