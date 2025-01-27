@@ -26,7 +26,7 @@ from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import pdbutil
 from volatility3.framework.symbols.windows.extensions import pe
-from volatility3.plugins.windows import pslist, vadinfo
+from volatility3.plugins.windows import pslist, vadinfo, pe_symbols
 
 try:
     import capstone
@@ -61,42 +61,10 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pdbutil", component=pdbutil.PDBUtility, version=(1, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(1, 1, 0)
+            ),
         ]
-
-    def _get_pefile_obj(
-        self, pe_table_name: str, layer_name: str, base_address: int
-    ) -> pefile.PE:
-        """
-        Attempts to pefile object from the bytes of the PE file
-
-        Args:
-            pe_table_name: name of the pe types table
-            layer_name: name of the lsass.exe process layer
-            base_address: base address of cryptdll.dll in lsass.exe
-
-        Returns:
-            the constructed pefile object
-        """
-        pe_data = io.BytesIO()
-
-        try:
-            dos_header = self.context.object(
-                pe_table_name + constants.BANG + "_IMAGE_DOS_HEADER",
-                offset=base_address,
-                layer_name=layer_name,
-            )
-
-            for offset, data in dos_header.reconstruct():
-                pe_data.seek(offset)
-                pe_data.write(data)
-
-            pe_ret = pefile.PE(data=pe_data.getvalue(), fast_load=True)
-
-        except exceptions.InvalidAddressException:
-            vollog.debug("Unable to reconstruct cryptdll.dll in memory")
-            pe_ret = None
-
-        return pe_ret
 
     def _check_for_skeleton_key_vad(
         self,
@@ -497,7 +465,9 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
             self.context, self.config_path, "windows", "pe", class_types=pe.class_types
         )
 
-        cryptdll = self._get_pefile_obj(pe_table_name, proc_layer_name, cryptdll_base)
+        cryptdll = pe_symbols.PESymbols.get_pefile_obj(
+            self.context, pe_table_name, proc_layer_name, cryptdll_base
+        )
         if not cryptdll:
             return None
 

@@ -244,7 +244,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 7, 0)
 
-    _version = (1, 0, 0)
+    _version = (1, 1, 0)
 
     # used for special handling of the kernel PDB file. See later notes
     os_module_name = "ntoskrnl.exe"
@@ -292,8 +292,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
-    def _get_pefile_obj(
+    @classmethod
+    def get_pefile_obj(
+        cls,
         context: interfaces.context.ContextInterface,
         pe_table_name: str,
         layer_name: str,
@@ -484,7 +485,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
         module_start = module_info[1]
 
         # we need a valid PE with an export table
-        pe_module = PESymbols._get_pefile_obj(
+        pe_module = PESymbols.get_pefile_obj(
             context, pe_table_name, layer_name, module_start
         )
         if not pe_module:
