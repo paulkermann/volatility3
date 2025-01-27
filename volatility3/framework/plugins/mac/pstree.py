@@ -10,8 +10,7 @@ from volatility3.plugins.mac import pslist
 
 
 class PsTree(plugins.PluginInterface):
-    """Plugin for listing processes in a tree based on their parent process
-    ID."""
+    """Plugin for listing processes in a tree based on their parent process ID."""
 
     _required_framework_version = (2, 0, 0)
 

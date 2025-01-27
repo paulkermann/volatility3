@@ -15,8 +15,8 @@ vollog = logging.getLogger(__name__)
 
 
 class Modxview(interfaces.plugins.PluginInterface):
-    """Centralize lsmod, check_modules and hidden_modules results to efficiently
-    spot modules presence and taints."""
+    """Centralize lsmod, check_modules and hidden_modules results to efficiently \
+spot modules presence and taints."""
 
     _version = (1, 0, 0)
     _required_framework_version = (2, 17, 0)
