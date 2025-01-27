@@ -214,7 +214,10 @@ if the "hidden_modules" key is present in known_modules.
             # Determine the symbols associated with a hook
             hooked_symbols = kernel.get_symbols_by_absolute_location(hook_address)
             hooked_symbols = ",".join(
-                [s.split(constants.BANG)[-1] for s in hooked_symbols]
+                [
+                    hooked_symbol.split(constants.BANG)[-1]
+                    for hooked_symbol in hooked_symbols
+                ]
             )
             yield ParsedFtraceOps(
                 ftrace_ops.vol.offset,
