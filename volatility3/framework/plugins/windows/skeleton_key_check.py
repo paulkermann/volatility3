@@ -11,14 +11,13 @@
 #
 # https://volatility-labs.blogspot.com/2021/10/memory-forensics-r-illustrated.html
 
-import io
 import logging
 from typing import Iterable, Tuple, List, Optional
 
 import pefile
 
 from volatility3.framework import interfaces, symbols, exceptions
-from volatility3.framework import renderers, constants
+from volatility3.framework import renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.layers import scanners
 from volatility3.framework.objects import utility
