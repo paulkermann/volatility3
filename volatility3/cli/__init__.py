@@ -363,12 +363,13 @@ class CommandLine:
             metavar="PLUGIN",
         )
         for plugin in sorted(plugin_list):
-            # First line of a plugin docstring will be the short description for -h
-            # Following lines will be the additional description (argparse epilog)
+            # First line of a plugin docstring will be the short description for -h.
+            # Text after the first two consecutive new lines will be
+            # the additional description (argparse epilog).
             short_help = additional_help = None
             if plugin_list[plugin].__doc__ is not None:
-                doc_split = plugin_list[plugin].__doc__.strip().split("\n", 1)
-                short_help = doc_split[0]
+                doc_split = plugin_list[plugin].__doc__.split("\n\n", 1)
+                short_help = doc_split[0].strip()
                 if len(doc_split) > 1:
                     additional_help = doc_split[1].strip()
 
