@@ -9,8 +9,7 @@ from volatility3.plugins.linux import pslist
 
 
 class PsTree(interfaces.plugins.PluginInterface):
-    """Plugin for listing processes in a tree based on their parent process
-    ID."""
+    """Plugin for listing processes in a tree based on their parent process ID."""
 
     _required_framework_version = (2, 13, 0)
     _version = (1, 1, 1)

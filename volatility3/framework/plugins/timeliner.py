@@ -41,8 +41,8 @@ class TimeLinerInterface(metaclass=abc.ABCMeta):
 
 
 class Timeliner(interfaces.plugins.PluginInterface):
-    """Runs all relevant plugins that provide time related information and
-    orders the results by time."""
+    """Runs all relevant plugins that provide time related information and \
+orders the results by time."""
 
     _required_framework_version = (2, 0, 0)
     _version = (1, 1, 0)
