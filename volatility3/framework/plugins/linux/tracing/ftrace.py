@@ -150,6 +150,7 @@ if the "hidden_modules" key is present in known_modules.
             An iterable of ParsedFtraceOps dataclasses, containing a selection of useful fields (callback, hook, module) related to an ftrace_ops struct
         """
         kernel = context.modules[kernel_name]
+        kernel_layer = context.layers[kernel.layer_name]
         callback = ftrace_ops.func
         callback_symbol = module_address = module_name = None
 
@@ -170,7 +171,7 @@ if the "hidden_modules" key is present in known_modules.
                 "A callback module origin could not be determined. hidden_modules plugin will be run to detect additional modules.",
             )
             known_modules_addresses = set(
-                context.layers[kernel.layer_name].canonicalize(module.vol.offset)
+                kernel_layer.canonicalize(module.vol.offset)
                 for module in modxview.Modxview.flatten_run_modules_results(
                     known_modules
                 )
