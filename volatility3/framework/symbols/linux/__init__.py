@@ -6,7 +6,7 @@ import contextlib
 import functools
 import logging
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Tuple, Optional
+from typing import Iterator, List, Tuple, Optional, Union
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3 import framework
@@ -133,7 +133,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         return cls.do_get_path(rdentry, rmnt, dentry, vfsmnt)
 
     @classmethod
-    def do_get_path(cls, rdentry, rmnt, dentry, vfsmnt) -> str:
+    def do_get_path(cls, rdentry, rmnt, dentry, vfsmnt) -> Union[None, str]:
         """Returns a pathname of the mount point or file
         It mimics the Linux kernel prepend_path function.
 
