@@ -1575,13 +1575,11 @@ class vfsmount(objects.StructType):
         # the 'mnt_parent' member was relocated from the 'vfsmount' struct to the newly
         # introduced 'mount' struct.
 
-        Alternatively, vmlinux.has_type('mount') can be used here but it is faster.
-
         Returns:
             'True' if the kernel lacks the 'mount' struct, typically indicating kernel < 3.3.
         """
 
-        return self.has_member("mnt_parent")
+        return not self._context.symbol_space.has_type("mount")
 
     def is_equal(self, vfsmount_ptr) -> bool:
         """Helper to make sure it is comparing two pointers to 'vfsmount'.
