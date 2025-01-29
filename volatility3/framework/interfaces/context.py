@@ -302,9 +302,11 @@ class ModuleInterface(interfaces.configuration.ConfigurableInterface):
     def has_enumeration(self, name: str) -> bool:
         """Determines whether an enumeration is present in the module's symbol table."""
 
+    @property
     @abstractmethod
-    def symbols(self) -> List:
-        """Lists the symbols contained in the symbol table for this module"""
+    def symbols(self) -> Iterable[str]:
+        """Returns an iterable of the symbols contained in the symbol table for this module"""
+        raise NotImplementedError("Symbols property has not been implemented.")
 
     @abstractmethod
     def get_symbols_by_absolute_location(self, offset: int, size: int = 0) -> List[str]:

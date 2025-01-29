@@ -34,7 +34,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Lists the processes present in a particular linux memory image."""
 
     _required_framework_version = (2, 13, 0)
-    _version = (4, 0, 0)
+    _version = (4, 1, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -179,6 +179,10 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 file_output = "VMA start matching task start_code not found"
         return file_output
 
+    @staticmethod
+    def _format_cred(cred):
+        return renderers.NotAvailableValue() if cred is None else cred
+
     def _generator(
         self,
         pid_filter: Callable[[Any], bool],
@@ -212,16 +216,21 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
             task_fields = self.get_task_fields(task, decorate_comm)
 
+            task_uid = self._format_cred(task_fields.uid)
+            task_gid = self._format_cred(task_fields.gid)
+            task_euid = self._format_cred(task_fields.euid)
+            task_egid = self._format_cred(task_fields.egid)
+
             yield 0, (
                 format_hints.Hex(task_fields.offset),
                 task_fields.user_pid,
                 task_fields.user_tid,
                 task_fields.user_ppid,
                 task_fields.name,
-                task_fields.uid or renderers.NotAvailableValue(),
-                task_fields.gid or renderers.NotAvailableValue(),
-                task_fields.euid or renderers.NotAvailableValue(),
-                task_fields.egid or renderers.NotAvailableValue(),
+                task_uid,
+                task_gid,
+                task_euid,
+                task_egid,
                 task_fields.creation_time or renderers.NotAvailableValue(),
                 file_output,
             )
@@ -250,6 +259,9 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # Note that the init_task itself is not yielded, since "ps" also never shows it.
         for task in init_task.tasks:
+            if not task.is_valid():
+                continue
+
             if filter_func(task):
                 continue
 
