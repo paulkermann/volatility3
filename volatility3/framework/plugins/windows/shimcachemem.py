@@ -24,6 +24,7 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
     """Reads Shimcache entries from the ahcache.sys AVL tree"""
 
     _required_framework_version = (2, 0, 0)
+    _version = (1, 0, 1)
 
     # These checks must be completed from newest -> oldest OS version.
     _win_version_file_map: List[Tuple[versions.OsDistinguisher, bool, str]] = [
@@ -74,8 +75,9 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def create_shimcache_table(
+        cls,
         context: interfaces.context.ContextInterface,
         symbol_table: str,
         config_path: str,

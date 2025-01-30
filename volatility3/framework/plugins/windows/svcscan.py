@@ -35,7 +35,7 @@ class SvcScan(interfaces.plugins.PluginInterface):
     """Scans for windows services."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (3, 0, 1)
+    _version = (3, 0, 2)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -61,8 +61,9 @@ class SvcScan(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def get_record_tuple(
+        cls,
         service_record: interfaces.objects.ObjectInterface,
         binary_info: ServiceBinaryInfo,
     ):

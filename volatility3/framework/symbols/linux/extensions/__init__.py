@@ -1211,19 +1211,15 @@ class struct_file(objects.StructType):
         """Returns a pointer to the dentry associated with this file"""
         if self.has_member("f_path"):
             return self.f_path.dentry
-        elif self.has_member("f_dentry"):
-            return self.f_dentry
-        else:
-            raise AttributeError("Unable to find file -> dentry")
+
+        raise AttributeError("Unable to find file -> dentry")
 
     def get_vfsmnt(self) -> interfaces.objects.ObjectInterface:
         """Returns the fs (vfsmount) where this file is mounted"""
         if self.has_member("f_path"):
             return self.f_path.mnt
-        elif self.has_member("f_vfsmnt"):
-            return self.f_vfsmnt
-        else:
-            raise AttributeError("Unable to find file -> vfs mount")
+
+        raise AttributeError("Unable to find file -> vfs mount")
 
     def get_inode(self) -> interfaces.objects.ObjectInterface:
         """Returns an inode associated with this file"""
@@ -1461,9 +1457,9 @@ class mount(objects.StructType):
             A dentry pointer
         """
         vfsmnt = self.get_vfsmnt_current()
-        dentry = vfsmnt.mnt_root
+        dentry_pointer = vfsmnt.mnt_root
 
-        return dentry
+        return dentry_pointer
 
     def get_dentry_parent(self):
         """Returns the parent root of the mounted tree
@@ -1571,39 +1567,38 @@ class vfsmount(objects.StructType):
         )
 
     def _is_kernel_prior_to_struct_mount(self) -> bool:
-        """Helper to distinguish between kernels prior to version 3.3.8 that
-        lacked the 'mount' structure and later versions that have it.
+        """Helper to distinguish between kernels prior to version 3.3 which lacked the
+        'mount' struct, versus later versions that include it.
+        See 7d6fec45a5131918b51dcd76da52f2ec86a85be6.
 
-        The 'mnt_parent' member was moved from struct 'vfsmount' to struct
-        'mount' when the latter was introduced.
-
-        Alternatively, vmlinux.has_type('mount') can be used here but it is faster.
+        # Following that commit, also in kernel version 3.3 (3376f34fff5be9954fd9a9c4fd68f4a0a36d480e),
+        # the 'mnt_parent' member was relocated from the 'vfsmount' struct to the newly
+        # introduced 'mount' struct.
 
         Returns:
-            bool: 'True' if the kernel
+            'True' if the kernel lacks the 'mount' struct, typically indicating kernel < 3.3.
         """
 
-        return self.has_member("mnt_parent")
+        return not self._context.symbol_space.has_type("mount")
 
     def is_equal(self, vfsmount_ptr) -> bool:
         """Helper to make sure it is comparing two pointers to 'vfsmount'.
 
-        Depending on the kernel version, the calling object (self) could be
-        a 'vfsmount \\*' (<3.3.8) or a 'vfsmount' (>=3.3.8). This way we trust
-        in the framework "auto" dereferencing ability to assure that when we
-        reach this point 'self' will be a 'vfsmount' already and self.vol.offset
+        Depending on the kernel version, see 3376f34fff5be9954fd9a9c4fd68f4a0a36d480e,
+        the calling object (self) could be a 'vfsmount \\*' (<3.3) or a 'vfsmount' (>=3.3).
+        This way we trust in the framework "auto" dereferencing ability to assure that
+        when we reach this point 'self' will be a 'vfsmount' already and self.vol.offset
         a 'vfsmount \\*' and not a 'vfsmount \\*\\*'. The argument must be a 'vfsmount \\*'.
         Typically, it's called from do_get_path().
 
         Args:
-            vfsmount_ptr (vfsmount *): A pointer to a 'vfsmount'
+            vfsmount_ptr: A pointer to a 'vfsmount'
 
         Raises:
             exceptions.VolatilityException: If vfsmount_ptr is not a 'vfsmount \\*'
 
         Returns:
-            bool: 'True' if the given argument points to the the same 'vfsmount'
-            as 'self'.
+            'True' if the given argument points to the same 'vfsmount' as 'self'.
         """
         if isinstance(vfsmount_ptr, objects.Pointer):
             return self.vol.offset == vfsmount_ptr
@@ -1612,13 +1607,14 @@ class vfsmount(objects.StructType):
                 "Unexpected argument type. It has to be a 'vfsmount *'"
             )
 
-    def _get_real_mnt(self):
+    def _get_real_mnt(self) -> interfaces.objects.ObjectInterface:
         """Gets the struct 'mount' containing this 'vfsmount'.
 
-        It should be only called from kernels >= 3.3.8 when 'struct mount' was introduced.
+        It should be only called from kernels >= 3.3 when 'struct mount' was introduced.
+        See 7d6fec45a5131918b51dcd76da52f2ec86a85be6
 
         Returns:
-            mount: the struct 'mount' containing this 'vfsmount'.
+            The 'mount' object containing this 'vfsmount'.
         """
         vmlinux = linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
         return linux.LinuxUtilities.container_of(
@@ -1637,8 +1633,8 @@ class vfsmount(objects.StructType):
         """Gets the parent fs (vfsmount) to where it's mounted on
 
         Returns:
-            For kernels <  3.3.8: A vfsmount pointer
-            For kernels >= 3.3.8: A vfsmount object
+            For kernels <  3.3: A vfsmount pointer
+            For kernels >= 3.3: A vfsmount object
         """
         if self._is_kernel_prior_to_struct_mount():
             return self.get_mnt_parent()
@@ -1671,8 +1667,8 @@ class vfsmount(objects.StructType):
         """Gets the mnt_parent member.
 
         Returns:
-            For kernels <  3.3.8: A vfsmount pointer
-            For kernels >= 3.3.8: A mount pointer
+            For kernels <  3.3: A vfsmount pointer
+            For kernels >= 3.3: A mount pointer
         """
         if self._is_kernel_prior_to_struct_mount():
             return self.mnt_parent
@@ -1743,8 +1739,10 @@ class kobject(objects.StructType):
 class mnt_namespace(objects.StructType):
     def get_inode(self):
         if self.has_member("proc_inum"):
+            # 98f842e675f96ffac96e6c50315790912b2812be 3.8 <= kernels < 3.19
             return self.proc_inum
         elif self.has_member("ns") and self.ns.has_member("inum"):
+            # kernels >= 3.19 435d5f4bb2ccba3b791d9ef61d2590e30b8e806e
             return self.ns.inum
         else:
             raise AttributeError("Unable to find mnt_namespace inode")

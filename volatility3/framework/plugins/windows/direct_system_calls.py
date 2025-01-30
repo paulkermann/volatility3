@@ -53,7 +53,7 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
     """Detects the Direct System Call technique used to bypass EDRs"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     # DLLs that are expected to host system call invocations
     valid_syscall_handlers = ("ntdll.dll", "win32u.dll")
@@ -200,8 +200,8 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
 
         return disasm_bytes, end_inst
 
-    @staticmethod
-    def get_disasm_function(architecture: str) -> Callable:
+    @classmethod
+    def get_disasm_function(cls, architecture: str) -> Callable:
         """
         Returns the disassembly handler for the given architecture
         .detail is used to get full instruction information
@@ -284,8 +284,9 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
 
         return None
 
-    @staticmethod
+    @classmethod
     def get_vad_maps(
+        cls,
         task: interfaces.objects.ObjectInterface,
     ) -> List[Tuple[int, int, str]]:
         """Creates a map of start/end addresses within a virtual address
@@ -310,9 +311,9 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
 
         return vads
 
-    @staticmethod
+    @classmethod
     def get_range_path(
-        ranges: List[Tuple[int, int, str]], address: int
+        cls, ranges: List[Tuple[int, int, str]], address: int
     ) -> Optional[str]:
         """
         Returns the path for the range holding `address`, if found

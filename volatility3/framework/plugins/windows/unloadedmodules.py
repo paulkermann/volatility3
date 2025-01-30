@@ -22,7 +22,7 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
     """Lists the unloaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -34,8 +34,9 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def create_unloadedmodules_table(
+        cls,
         context: interfaces.context.ContextInterface,
         symbol_table: str,
         config_path: str,
