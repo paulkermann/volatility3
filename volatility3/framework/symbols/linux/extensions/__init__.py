@@ -2088,8 +2088,11 @@ class bpf_prog(objects.StructType):
 
         prog_tag_addr = self.tag.vol.offset
         prog_tag_size = self.tag.count
-        prog_tag_bytes = vmlinux_layer.read(prog_tag_addr, prog_tag_size)
+        if not vmlinux_layer.is_valid(prog_tag_addr, prog_tag_size):
+            vollog.debug("Unable to read bpf tag string from 0x%x", prog_tag_addr)
+            return None
 
+        prog_tag_bytes = vmlinux_layer.read(prog_tag_addr, prog_tag_size)
         prog_tag = binascii.hexlify(prog_tag_bytes).decode()
         return prog_tag
 

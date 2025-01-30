@@ -437,7 +437,7 @@ class elf_linkmap(objects.StructType):
     def get_name(self):
         try:
             buf = self._context.layers.read(self.vol.layer_name, self.l_name, 256)
-        except exceptions.PagedInvalidAddressException:
+        except exceptions.InvalidAddressException:
             # Protection against memory smear
             vollog.log(
                 constants.LOGLEVEL_VVVV,
