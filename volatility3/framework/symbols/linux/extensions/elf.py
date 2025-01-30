@@ -312,6 +312,8 @@ class elf(objects.StructType):
 class elf_sym(objects.StructType):
     """An elf symbol entry"""
 
+    _MAX_NAME_LENGTH = linux_constants.KSYM_NAME_LEN
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cached_strtab = None
@@ -324,20 +326,13 @@ class elf_sym(objects.StructType):
     def cached_strtab(self, cached_strtab):
         self._cached_strtab = cached_strtab
 
-    def get_name(self, max_size=KSYM_NAME_LEN) -> Optional[str]:
-        """Returns the symbol name
-
-        Args:
-            max_size: Maximum length for a symbol name string. Defaults to KSYM_NAME_LEN (512 bytes).
-
-        Returns:
-            The symbol name
-        """
+    def get_name(self) -> Optional[str]:
+        """Returns the symbol name"""
 
         addr = self._cached_strtab + self.st_name
 
         layer = self._context.layers[self.vol.layer_name]
-        name_bytes = layer.read(addr, max_size, pad=True)
+        name_bytes = layer.read(addr, self._MAX_NAME_LENGTH, pad=True)
         if not name_bytes:
             return None
 
