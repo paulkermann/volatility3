@@ -18,7 +18,7 @@ class VmaYaraScan(interfaces.plugins.PluginInterface):
     """Scans all virtual memory areas for tasks using yara."""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 0, 2)
+    _version = (1, 0, 3)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -105,8 +105,9 @@ class VmaYaraScan(interfaces.plugins.PluginInterface):
                         value,
                     )
 
-    @staticmethod
+    @classmethod
     def get_vma_maps(
+        cls,
         task: interfaces.objects.ObjectInterface,
     ) -> Iterable[Tuple[int, int]]:
         """Creates a map of start/end addresses for each virtual memory area in a task.

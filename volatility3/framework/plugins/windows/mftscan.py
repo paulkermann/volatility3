@@ -22,7 +22,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -37,8 +37,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def enumerate_mft_records(
+        cls,
         context: interfaces.context.ContextInterface,
         config_path: str,
         primary_layer_name: str,
@@ -128,8 +129,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                         layer_name=layer.name,
                     )
 
-    @staticmethod
+    @classmethod
     def parse_mft_records(
+        cls,
         record_map: Dict[int, Tuple[str, int, int]],
         mft_record: interfaces.objects.ObjectInterface,
         attr: interfaces.objects.ObjectInterface,
@@ -191,8 +193,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 file_name,
             )
 
-    @staticmethod
+    @classmethod
     def parse_data_record(
+        cls,
         mft_record: interfaces.objects.ObjectInterface,
         attr: interfaces.objects.ObjectInterface,
         record_map: Dict[int, Tuple[str, int, int]],
@@ -325,7 +328,7 @@ class ADS(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 7, 0)
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -343,8 +346,9 @@ class ADS(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def parse_ads_data_records(
+        cls,
         record_map: Dict[int, Tuple[str, int, int]],
         mft_record: interfaces.objects.ObjectInterface,
         attr: interfaces.objects.ObjectInterface,
@@ -394,7 +398,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 7, 0)
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -412,8 +416,9 @@ class ResidentData(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def parse_first_data_records(
+        cls,
         record_map: Dict[int, Tuple[str, int, int]],
         mft_record: interfaces.objects.ObjectInterface,
         attr: interfaces.objects.ObjectInterface,

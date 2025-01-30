@@ -23,6 +23,8 @@ from volatility3.framework.constants._version import (
     VERSION_SUFFIX as VERSION_SUFFIX,
 )
 
+REQUIRED_PYTHON_VERSION = (3, 8, 0)
+
 PLUGINS_PATH = [
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugins")),
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "plugins")),

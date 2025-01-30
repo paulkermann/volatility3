@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import logging
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from typing import Iterator, List, Tuple
 from volatility3 import framework
 from volatility3.framework import (
@@ -96,6 +97,20 @@ class AbstractNetfilter(ABC):
         ):
             raise exceptions.PluginRequirementException(
                 f"linux.LinuxUtilities version not suitable: required {linuxutils_required_version} found {linuxutils_current_version}"
+            )
+
+        linux_utilities_modules_required_version = (
+            Netfilter._required_linux_utilities_modules_version
+        )
+        linux_utilities_modules_current_version = (
+            linux_utilities_modules.Modules._version
+        )
+        if not requirements.VersionRequirement.matches_required(
+            linux_utilities_modules_required_version,
+            linux_utilities_modules_current_version,
+        ):
+            raise exceptions.PluginRequirementException(
+                f"linux_utilities_modules.Modules version not suitable: required {linux_utilities_modules_required_version} found {linux_utilities_modules_current_version}"
             )
 
         modules = lsmod.Lsmod.list_modules(context, kernel_module_name)
@@ -263,8 +278,10 @@ class AbstractNetfilter(ABC):
         """Helper to obtain the module and symbol name in the format needed for the
         output of this plugin.
         """
-        module_name, symbol_name = linux.LinuxUtilities.lookup_module_address(
-            self.vmlinux, self.handlers, addr
+        module_name, symbol_name = (
+            linux_utilities_modules.Modules.lookup_module_address(
+                self._context, self.vmlinux.name, self.handlers, addr
+            )
         )
 
         if module_name == "UNKNOWN":
@@ -677,6 +694,7 @@ class Netfilter(interfaces.plugins.PluginInterface):
 
     _version = (1, 1, 0)
 
+    _required_linux_utilities_modules_version = (1, 0, 0)
     _required_linuxutils_version = (2, 1, 0)
     _required_lsmod_version = (2, 0, 0)
 
@@ -687,6 +705,11 @@ class Netfilter(interfaces.plugins.PluginInterface):
                 name="kernel",
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=cls._required_linux_utilities_modules_version,
             ),
             requirements.PluginRequirement(
                 name="lsmod", plugin=lsmod.Lsmod, version=cls._required_lsmod_version

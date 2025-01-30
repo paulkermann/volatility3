@@ -1,8 +1,7 @@
 # This file is Copyright 2019 Volatility Foundation and licensed under the Volatility Software License 1.0
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
-"""A module containing a collection of plugins that produce data typically
-found in Linux's /proc file system."""
+"""A module containing a plugin that checks the system call table for hooks."""
 import contextlib
 import logging
 from typing import List
@@ -83,7 +82,7 @@ class Check_syscall(plugins.PluginInterface):
 
         return table_size
 
-    def _get_table_info_disassembly(self, ptr_sz, vmlinux):
+    def _get_table_info_disassembly(self, ptr_sz, vmlinux) -> int:
         """Find the size of the system call table by disassembling functions
         that immediately reference it in their first instruction This is in the
         form 'cmp reg,NR_syscalls'."""
@@ -108,9 +107,13 @@ class Check_syscall(plugins.PluginInterface):
             return 0
 
         vmlinux = self.context.modules[self.config["kernel"]]
-        data = self.context.layers.read(vmlinux.layer_name, func_addr, 6)
+        vmlinux_layer = self.context.layers[vmlinux.layer_name]
+        try:
+            data = vmlinux_layer.read(func_addr, 6)
+        except exceptions.InvalidAddressException:
+            return 0
 
-        for address, size, mnemonic, op_str in md.disasm_lite(data, func_addr):
+        for _address, _size, mnemonic, op_str in md.disasm_lite(data, func_addr):
             if mnemonic == "CMP":
                 table_size = int(op_str.split(",")[1].strip()) & 0xFFFF
                 break

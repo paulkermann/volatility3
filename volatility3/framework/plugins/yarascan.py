@@ -37,7 +37,7 @@ except ImportError:
 
 
 class YaraScanner(interfaces.layers.ScannerInterface):
-    _version = (2, 1, 0)
+    _version = (2, 1, 1)
 
     # yara.Rules isn't exposed, so we can't type this properly
     def __init__(self, rules) -> None:
@@ -79,23 +79,23 @@ class YaraScanner(interfaces.layers.ScannerInterface):
                     for offset, name, value in match.strings:
                         yield (offset + data_offset, match.rule, name, value)
 
-    @staticmethod
-    def get_rule(rule):
+    @classmethod
+    def get_rule(cls, rule):
         if USE_YARA_X:
             return yara_x.compile(f"rule r1 {{strings: $a = {rule} condition: $a}}")
         return yara.compile(
             sources={"n": f"rule r1 {{strings: $a = {rule} condition: $a}}"}
         )
 
-    @staticmethod
-    def from_compiled_file(filepath):
+    @classmethod
+    def from_compiled_file(cls, filepath):
         with resources.ResourceAccessor().open(filepath, "rb") as fp:
             if USE_YARA_X:
                 return yara_x.Rules.deserialize_from(file=fp)
             return yara.load(file=fp)
 
-    @staticmethod
-    def from_file(filepath):
+    @classmethod
+    def from_file(cls, filepath):
         with resources.ResourceAccessor().open(filepath, "rb") as fp:
             if USE_YARA_X:
                 return yara_x.compile(fp.read().decode())
