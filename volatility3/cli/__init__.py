@@ -19,7 +19,7 @@ import os
 import sys
 import tempfile
 import traceback
-from typing import Any, Dict, List, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from urllib import parse, request
 
 try:
@@ -64,7 +64,7 @@ class PrintedProgress:
     def __init__(self):
         self._max_message_len = 0
 
-    def __call__(self, progress: Union[int, float], description: str = None):
+    def __call__(self, progress: Union[int, float], description: Optional[str] = None):
         """A simple function for providing text-based feedback.
 
         .. warning:: Only for development use.
@@ -81,7 +81,7 @@ class PrintedProgress:
 class MuteProgress(PrintedProgress):
     """A dummy progress handler that produces no output when called."""
 
-    def __call__(self, progress: Union[int, float], description: str = None):
+    def __call__(self, progress: Union[int, float], description: Optional[str] = None):
         pass
 
 
@@ -363,10 +363,21 @@ class CommandLine:
             metavar="PLUGIN",
         )
         for plugin in sorted(plugin_list):
+            # First line of a plugin docstring will be the short description for -h.
+            # Text after the first two consecutive new lines will be
+            # the additional description (argparse epilog).
+            short_help = additional_help = None
+            if plugin_list[plugin].__doc__ is not None:
+                doc_split = plugin_list[plugin].__doc__.split("\n\n", 1)
+                short_help = doc_split[0].strip()
+                if len(doc_split) > 1:
+                    additional_help = doc_split[1].strip()
+
             plugin_parser = subparser.add_parser(
                 plugin,
-                help=plugin_list[plugin].__doc__,
-                description=plugin_list[plugin].__doc__,
+                help=short_help,
+                description=short_help,
+                epilog=additional_help,
             )
             self.populate_requirements_argparse(plugin_parser, plugin_list[plugin])
 
@@ -572,6 +583,8 @@ class CommandLine:
         fulltrace = traceback.TracebackException.from_exception(excp).format(chain=True)
         vollog.debug("".join(fulltrace))
 
+        file_a_bug_msg = f"Please re-run with -vvv and file a bug with the output at {constants.BUG_URL}"
+
         if isinstance(excp, exceptions.InvalidAddressException):
             general = "Volatility was unable to read a requested page:"
             if isinstance(excp, exceptions.SwappedInvalidAddressException):
@@ -616,9 +629,7 @@ class CommandLine:
         elif isinstance(excp, exceptions.LayerException):
             general = f"Volatility experienced a layer-related issue: {excp.layer_name}"
             detail = f"{excp}"
-            caused_by = [
-                "A faulty layer implementation (re-run with -vvv and file a bug)"
-            ]
+            caused_by = [f"A faulty layer implementation. {file_a_bug_msg}"]
         elif isinstance(excp, exceptions.MissingModuleException):
             general = f"Volatility could not import a necessary module: {excp.module}"
             detail = f"{excp}"
@@ -629,13 +640,17 @@ class CommandLine:
             general = "Volatility experienced an issue when rendering the output:"
             detail = f"{excp}"
             caused_by = ["An invalid renderer option, such as no visible columns"]
+        elif isinstance(excp, exceptions.VersionMismatchException):
+            general = "A version mismatch was detected between two components:"
+            detail = f"{excp}"
+            caused_by = [
+                excp.failure_reason or "An outdated API caller, such as a method.",
+                file_a_bug_msg,
+            ]
         else:
             general = "Volatility encountered an unexpected situation."
             detail = ""
-            caused_by = [
-                "Please re-run using with -vvv and file a bug with the output",
-                f"at {constants.BUG_URL}",
-            ]
+            caused_by = [file_a_bug_msg]
 
         # Code that actually renders the exception
         output = sys.stderr

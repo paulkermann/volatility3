@@ -5,17 +5,30 @@
 # Check the python version to ensure it's suitable
 import glob
 import sys
-from volatility3.framework import check_python_version as check_python_version
 import zipfile
 import importlib
 import inspect
 import logging
 import os
 import traceback
-from typing import Any, Dict, Generator, List, Tuple, Type, TypeVar
+import functools
+import warnings
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, TypeVar
 
-from volatility3.framework import constants, interfaces
+from volatility3.framework import constants, exceptions, interfaces
+from volatility3.framework.configuration import requirements
 
+if (
+    sys.version_info.major != constants.REQUIRED_PYTHON_VERSION[0]
+    or sys.version_info.minor < constants.REQUIRED_PYTHON_VERSION[1]
+    or (
+        sys.version_info.minor == constants.REQUIRED_PYTHON_VERSION[1]
+        and sys.version_info.micro < constants.REQUIRED_PYTHON_VERSION[2]
+    )
+):
+    raise RuntimeError(
+        f"Volatility framework requires python version {'.'.join(str(x) for x in constants.REQUIRED_PYTHON_VERSION)} or greater"
+    )
 
 # ##
 #
@@ -53,12 +66,67 @@ def require_interface_version(*args) -> None:
                 )
 
 
+class Deprecation:
+    """Deprecation related methods."""
+
+    @staticmethod
+    def deprecated_method(
+        replacement: Callable,
+        replacement_version: Tuple[int, int, int] = None,
+        additional_information: str = "",
+    ):
+        """A decorator for marking functions as deprecated.
+
+        Args:
+            replacement: The replacement function overriding the deprecated API, in the form of a Callable (typically a method)
+            replacement_version: The "replacement" base class version that the deprecated method expects before proxying to it. This implies that "replacement" is a method from a class that inherits from VersionableInterface.
+            additional_information: Information appended at the end of the deprecation message
+        """
+
+        def decorator(deprecated_func):
+            @functools.wraps(deprecated_func)
+            def wrapper(*args, **kwargs):
+                nonlocal replacement, replacement_version, additional_information
+                # Prevent version mismatches between deprecated (proxy) methods and the ones they proxy
+                if (
+                    replacement_version is not None
+                    and callable(replacement)
+                    and hasattr(replacement, "__self__")
+                ):
+                    replacement_base_class = replacement.__self__
+
+                    # Verify that the base class inherits from VersionableInterface
+                    if inspect.isclass(replacement_base_class) and issubclass(
+                        replacement_base_class,
+                        interfaces.configuration.VersionableInterface,
+                    ):
+                        # SemVer check
+                        if not requirements.VersionRequirement.matches_required(
+                            replacement_version, replacement_base_class.version
+                        ):
+                            raise exceptions.VersionMismatchException(
+                                deprecated_func,
+                                replacement_base_class,
+                                replacement_version,
+                                "This is a bug, the deprecated call needs to be removed and the caller needs to update their code to use the new method.",
+                            )
+
+                deprecation_msg = f"Method \"{deprecated_func.__module__ + '.' + deprecated_func.__qualname__}\" is deprecated, use \"{replacement.__module__ + '.' + replacement.__qualname__}\" instead. {additional_information}"
+                warnings.warn(deprecation_msg, FutureWarning)
+                # Return the wrapped function with its original arguments
+                return deprecated_func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+
 class NonInheritable:
     def __init__(self, value: Any, cls: Type) -> None:
         self.default_value = value
         self.cls = cls
 
-    def __get__(self, obj: Any, get_type: Type = None) -> Any:
+    def __get__(self, obj: Any, get_type: Type = Optional[None]) -> Any:
         if type is self.cls:
             if hasattr(self.default_value, "__get__"):
                 return self.default_value.__get__(obj, get_type)
@@ -185,8 +253,7 @@ def _zipwalk(path: str):
                 zip_results[os.path.join(path, os.path.dirname(file.filename))] = (
                     dirlist
                 )
-    for value in zip_results:
-        yield value, zip_results[value]
+    yield from zip_results.items()
 
 
 def list_plugins() -> Dict[str, Type[interfaces.plugins.PluginInterface]]:

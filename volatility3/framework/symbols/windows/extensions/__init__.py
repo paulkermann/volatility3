@@ -405,10 +405,24 @@ class DEVICE_OBJECT(objects.StructType, pool.ExecutiveObject):
 
     def get_attached_devices(self) -> Generator[ObjectInterface, None, None]:
         """Enumerate the attached device's objects"""
-        device = self.AttachedDevice.dereference()
+        seen = set()
+
+        try:
+            device = self.AttachedDevice.dereference()
+        except exceptions.InvalidAddressException:
+            return
+
         while device:
+            if device.vol.offset in seen:
+                break
+            seen.add(device.vol.offset)
+
             yield device
-            device = device.AttachedDevice.dereference()
+
+            try:
+                device = device.AttachedDevice.dereference()
+            except exceptions.InvalidAddressException:
+                return
 
 
 class DRIVER_OBJECT(objects.StructType, pool.ExecutiveObject):
@@ -421,10 +435,24 @@ class DRIVER_OBJECT(objects.StructType, pool.ExecutiveObject):
 
     def get_devices(self) -> Generator[ObjectInterface, None, None]:
         """Enumerate the driver's device objects"""
-        device = self.DeviceObject.dereference()
+        seen = set()
+
+        try:
+            device = self.DeviceObject.dereference()
+        except exceptions.InvalidAddressException:
+            return
+
         while device:
+            if device.vol.offset in seen:
+                return
+            seen.add(device.vol.offset)
+
             yield device
-            device = device.NextDevice.dereference()
+
+            try:
+                device = device.NextDevice.dereference()
+            except exceptions.InvalidAddressException:
+                return
 
     def is_valid(self) -> bool:
         """Determine if the object is valid."""
@@ -519,7 +547,8 @@ class ETHREAD(objects.StructType, pool.ExecutiveObject):
                 if not isinstance(ctime, datetime.datetime):
                     return False
 
-                if not (1998 < ctime.year < 2030):
+                current_year = datetime.datetime.now().year
+                if not (1998 < ctime.year < current_year + 10):
                     return False
 
         except exceptions.InvalidAddressException:
@@ -692,7 +721,9 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
 
         return True
 
-    def add_process_layer(self, config_prefix: str = None, preferred_name: str = None):
+    def add_process_layer(
+        self, config_prefix: Optional[str] = None, preferred_name: Optional[str] = None
+    ):
         """Constructs a new layer based on the process's DirectoryTableBase."""
 
         parent_layer = self._context.layers[self.vol.layer_name]
@@ -931,56 +962,55 @@ class LIST_ENTRY(objects.StructType, collections.abc.Iterable):
     ) -> Iterator[interfaces.objects.ObjectInterface]:
         """Returns an iterator of the entries in the list."""
 
-        layer = layer or self.vol.layer_name
+        layer_name = layer or self.vol.layer_name
+        native_layer_name = layer_name or self.vol.native_layer_name
+
+        trans_layer = self._context.layers[layer_name]
+        if not trans_layer.is_valid(self.vol.offset):
+            return None
 
         relative_offset = self._context.symbol_space.get_type(
             symbol_type
         ).relative_child_offset(member)
 
-        direction = "Blink"
-        if forward:
-            direction = "Flink"
+        direction = "Flink" if forward else "Blink"
 
-        trans_layer = self._context.layers[layer]
-
-        try:
-            is_valid = trans_layer.is_valid(self.vol.offset)
-            if not is_valid:
-                return None
-
-            link = getattr(self, direction).dereference()
-        except exceptions.InvalidAddressException:
+        link_ptr = getattr(self, direction)
+        if not (link_ptr and link_ptr.is_readable()):
             return None
+        link = link_ptr.dereference()
 
         if not sentinel:
+            obj_offset = self.vol.offset - relative_offset
+            if not trans_layer.is_valid(obj_offset):
+                return None
+
             yield self._context.object(
                 symbol_type,
-                layer,
-                offset=self.vol.offset - relative_offset,
-                native_layer_name=layer or self.vol.native_layer_name,
+                layer_name,
+                offset=obj_offset,
+                native_layer_name=native_layer_name,
             )
 
         seen = {self.vol.offset}
         while link.vol.offset not in seen:
             obj_offset = link.vol.offset - relative_offset
-
             if not trans_layer.is_valid(obj_offset):
                 return None
 
-            obj = self._context.object(
+            yield self._context.object(
                 symbol_type,
-                layer,
+                layer_name,
                 offset=obj_offset,
-                native_layer_name=layer or self.vol.native_layer_name,
+                native_layer_name=native_layer_name,
             )
-            yield obj
 
             seen.add(link.vol.offset)
 
-            try:
-                link = getattr(link, direction).dereference()
-            except exceptions.InvalidAddressException:
+            link_ptr = getattr(link, direction)
+            if not (link_ptr and link_ptr.is_readable()):
                 return None
+            link = link_ptr.dereference()
 
     def __iter__(self) -> Iterator[interfaces.objects.ObjectInterface]:
         return self.to_list(self.vol.parent.vol.type_name, self.vol.member_name)

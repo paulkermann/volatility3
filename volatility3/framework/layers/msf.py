@@ -194,7 +194,7 @@ class PdbMSFStream(linear.LinearlyMappedLayer):
     ) -> None:
         super().__init__(context, config_path, name, metadata)
         self._base_layer = self.config["base_layer"]
-        self._pages = self.config.get("pages", None)
+        self._pages = self.config.get("pages", [])
         self._pages_len = len(self._pages)
         if not self._pages:
             raise PDBFormatException(name, "Invalid/no pages specified")

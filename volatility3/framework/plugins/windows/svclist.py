@@ -18,6 +18,7 @@ vollog = logging.getLogger(__name__)
 class SvcList(svcscan.SvcScan):
     """Lists services contained with the services.exe doubly linked list of services"""
 
+    _required_framework_version = (2, 0, 0)
     _version = (1, 0, 0)
 
     def __init__(self, *args, **kwargs):
@@ -41,7 +42,7 @@ class SvcList(svcscan.SvcScan):
     @classmethod
     def _get_exe_range(cls, proc) -> Optional[Tuple[int, int]]:
         """
-        Returns a tuple of starting,ending address for
+        Returns a tuple of starting address and size of
         the VAD containing services.exe
         """
 

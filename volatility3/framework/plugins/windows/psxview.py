@@ -21,11 +21,12 @@ vollog = logging.getLogger(__name__)
 
 
 class PsXView(plugins.PluginInterface):
-    """Lists all processes found via four of the methods described in \"The Art of Memory Forensics,\" which may help
-    identify processes that are trying to hide themselves. I recommend using -r pretty if you are looking at this
-    plugin's output in a terminal."""
+    """Lists all processes found via four of the methods described in \"The Art of Memory Forensics\" which may help \
+identify processes that are trying to hide themselves.
 
-    # I've omitted the desktop thread scanning method because Volatility3 doesn't appear to have the funcitonality
+We recommend using -r pretty if you are looking at this plugin's output in a terminal."""
+
+    # I've omitted the desktop thread scanning method because Volatility3 doesn't appear to have the functionality
     # which the original plugin used to do it.
 
     # The sessions method is omitted because it begins with the list of processes found by Pslist anyway.

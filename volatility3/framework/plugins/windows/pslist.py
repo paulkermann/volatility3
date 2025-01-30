@@ -4,7 +4,7 @@
 
 import datetime
 import logging
-from typing import Callable, Iterator, List, Type
+from typing import Callable, Iterator, List, Optional, Type
 
 from volatility3.framework import renderers, interfaces, layers, exceptions, constants
 from volatility3.framework.configuration import requirements
@@ -114,7 +114,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     @classmethod
     def create_pid_filter(
-        cls, pid_list: List[int] = None, exclude: bool = False
+        cls, pid_list: Optional[List[int]] = None, exclude: bool = False
     ) -> Callable[[interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process IDs.
@@ -171,7 +171,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     @classmethod
     def create_name_filter(
-        cls, name_list: List[str] = None, exclude: bool = False
+        cls, name_list: Optional[List[str]] = None, exclude: bool = False
     ) -> Callable[[interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process names.

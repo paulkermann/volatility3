@@ -8,7 +8,7 @@ from typing import Tuple
 from Crypto.Cipher import ARC4, AES
 from Crypto.Hash import HMAC
 
-from volatility3.framework import interfaces, renderers
+from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
@@ -22,7 +22,7 @@ class Cachedump(interfaces.plugins.PluginInterface):
     """Dumps lsa secrets from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -43,16 +43,16 @@ class Cachedump(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def get_nlkm(
-        sechive: registry.RegistryHive, lsakey: bytes, is_vista_or_later: bool
+        cls, sechive: registry.RegistryHive, lsakey: bytes, is_vista_or_later: bool
     ):
         return lsadump.Lsadump.get_secret_by_name(
             sechive, "NL$KM", lsakey, is_vista_or_later
         )
 
-    @staticmethod
-    def decrypt_hash(edata: bytes, nlkm: bytes, ch, xp: bool):
+    @classmethod
+    def decrypt_hash(cls, edata: bytes, nlkm: bytes, ch, xp: bool):
         if xp:
             hmac_md5 = HMAC.new(nlkm, ch)
             rc4key = hmac_md5.digest()
@@ -69,8 +69,8 @@ class Cachedump(interfaces.plugins.PluginInterface):
                 data += aes.decrypt(buf)
         return data
 
-    @staticmethod
-    def parse_cache_entry(cache_data: bytes) -> Tuple[int, int, int, bytes, bytes]:
+    @classmethod
+    def parse_cache_entry(cls, cache_data: bytes) -> Tuple[int, int, int, bytes, bytes]:
         (uname_len, domain_len) = unpack("<HH", cache_data[:4])
         if len(cache_data[60:62]) == 0:
             return (uname_len, domain_len, 0, b"", b"")
@@ -79,9 +79,9 @@ class Cachedump(interfaces.plugins.PluginInterface):
         enc_data = cache_data[96:]
         return (uname_len, domain_len, domain_name_len, enc_data, ch)
 
-    @staticmethod
+    @classmethod
     def parse_decrypted_cache(
-        dec_data: bytes, uname_len: int, domain_len: int, domain_name_len: int
+        cls, dec_data: bytes, uname_len: int, domain_len: int, domain_name_len: int
     ) -> Tuple[str, str, str, bytes]:
         """Get the data from the cache and separate it into the username, domain name, and hash data"""
         uname_offset = 72
@@ -140,9 +140,14 @@ class Cachedump(interfaces.plugins.PluginInterface):
             if cache_item.Name == "NL$Control":
                 continue
 
-            data = sechive.read(cache_item.Data + 4, cache_item.DataLength)
-            if data is None:
+            try:
+                data = sechive.read(cache_item.Data + 4, cache_item.DataLength)
+            except exceptions.InvalidAddressException:
                 continue
+
+            if not data:
+                continue
+
             (
                 uname_len,
                 domain_len,

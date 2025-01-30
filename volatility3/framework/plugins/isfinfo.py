@@ -132,6 +132,7 @@ class IsfInfo(plugins.PluginInterface):
                         valid = check_valid(data)
                     except (UnicodeDecodeError, json.decoder.JSONDecodeError):
                         vollog.warning(f"Invalid ISF: {entry}")
+                        continue
                 yield (
                     0,
                     (

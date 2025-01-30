@@ -127,8 +127,8 @@ class PoolHeaderScanner(interfaces.layers.ScannerInterface):
 class PoolScanner(plugins.PluginInterface):
     """A generic pool scanner plugin."""
 
-    _version = (1, 0, 0)
     _required_framework_version = (2, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -181,9 +181,9 @@ class PoolScanner(plugins.PluginInterface):
                 ),
             )
 
-    @staticmethod
+    @classmethod
     def builtin_constraints(
-        symbol_table: str, tags_filter: List[bytes] = None
+        cls, symbol_table: str, tags_filter: Optional[List[bytes]] = None
     ) -> List[PoolConstraint]:
         """Get built-in PoolConstraints given a list of pool tags.
 

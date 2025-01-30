@@ -41,8 +41,8 @@ class TimeLinerInterface(metaclass=abc.ABCMeta):
 
 
 class Timeliner(interfaces.plugins.PluginInterface):
-    """Runs all relevant plugins that provide time related information and
-    orders the results by time."""
+    """Runs all relevant plugins that provide time related information and \
+orders the results by time."""
 
     _required_framework_version = (2, 0, 0)
     _version = (1, 1, 0)
@@ -54,7 +54,9 @@ class Timeliner(interfaces.plugins.PluginInterface):
         self.automagics: Optional[List[interfaces.automagic.AutomagicInterface]] = None
 
     @classmethod
-    def get_usable_plugins(cls, selected_list: List[str] = None) -> List[Type]:
+    def get_usable_plugins(
+        cls, selected_list: Optional[List[str]] = None
+    ) -> List[Type]:
         # Initialize for the run
         plugin_list = list(framework.class_subclasses(TimeLinerInterface))
 

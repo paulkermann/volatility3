@@ -15,7 +15,7 @@ from volatility3.framework import (
     symbols,
 )
 from volatility3.framework.configuration import requirements
-from volatility3.framework.layers import scanners
+from volatility3.framework.layers import scanners, registry
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import versions
@@ -35,7 +35,7 @@ class SvcScan(interfaces.plugins.PluginInterface):
     """Scans for windows services."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (3, 0, 1)
+    _version = (3, 0, 2)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -61,8 +61,9 @@ class SvcScan(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def get_record_tuple(
+        cls,
         service_record: interfaces.objects.ObjectInterface,
         binary_info: ServiceBinaryInfo,
     ):
@@ -159,12 +160,20 @@ class SvcScan(interfaces.plugins.PluginInterface):
                 return cast(
                     objects.StructType, hive.get_key(r"CurrentControlSet\Services")
                 )
-            except (KeyError, exceptions.InvalidAddressException):
+            except (
+                KeyError,
+                exceptions.InvalidAddressException,
+                registry.RegistryFormatException,
+            ):
                 try:
                     return cast(
                         objects.StructType, hive.get_key(r"ControlSet001\Services")
                     )
-                except (KeyError, exceptions.InvalidAddressException):
+                except (
+                    KeyError,
+                    exceptions.InvalidAddressException,
+                    registry.RegistryFormatException,
+                ):
                     vollog.log(
                         constants.LOGLEVEL_VVVV,
                         "Could not retrieve any control set from SYSTEM hive",

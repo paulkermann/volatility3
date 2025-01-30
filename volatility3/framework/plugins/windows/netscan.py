@@ -23,7 +23,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Scans for network objects present in a particular windows memory image."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -50,9 +50,9 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def create_netscan_constraints(
-        context: interfaces.context.ContextInterface, symbol_table: str
+        cls, context: interfaces.context.ContextInterface, symbol_table: str
     ) -> List[poolscanner.PoolConstraint]:
         """Creates a list of Pool Tag Constraints for network objects.
 

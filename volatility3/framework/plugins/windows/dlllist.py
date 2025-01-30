@@ -19,7 +19,7 @@ vollog = logging.getLogger(__name__)
 
 
 class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
-    """Lists the loaded modules in a particular windows memory image."""
+    """Lists the loaded DLLs in a particular windows memory image."""
 
     _required_framework_version = (2, 0, 0)
     _version = (3, 0, 0)
@@ -40,6 +40,9 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="psscan", component=psscan.PsScan, version=(1, 1, 0)
             ),
             requirements.VersionRequirement(
+                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
+            ),
+            requirements.VersionRequirement(
                 name="info", component=info.Info, version=(1, 0, 0)
             ),
             requirements.ListRequirement(
@@ -53,14 +56,14 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 description="Process offset in the physical address space",
                 optional=True,
             ),
-            requirements.StringRequirement(
-                name="name",
-                description="Specify a regular expression to match dll name(s)",
-                optional=True,
-            ),
             requirements.IntRequirement(
                 name="base",
                 description="Specify a base virtual address in process memory",
+                optional=True,
+            ),
+            requirements.StringRequirement(
+                name="name",
+                description="Specify a regular expression to match dll name(s)",
                 optional=True,
             ),
             requirements.BooleanRequirement(
@@ -75,9 +78,6 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 default=False,
                 optional=True,
             ),
-            requirements.VersionRequirement(
-                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
-            ),
         ]
 
     def _generator(self, procs):
@@ -90,12 +90,15 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         kuser = info.Info.get_kuser_structure(
             self.context, kernel.layer_name, kernel.symbol_table_name
         )
+
         nt_major_version = int(kuser.NtMajorVersion)
         nt_minor_version = int(kuser.NtMinorVersion)
+
         # LoadTime only applies to versions higher or equal to Window 7 (6.1 and higher)
         dll_load_time_field = (nt_major_version > 6) or (
             nt_major_version == 6 and nt_minor_version >= 1
         )
+
         for proc in procs:
             proc_id = proc.UniqueProcessId
             proc_layer_name = proc.add_process_layer()
@@ -135,7 +138,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
                 if dll_load_time_field:
                     # Versions prior to 6.1 won't have the LoadTime attribute
-                    # and 32bit version shouldn't have the Quadpart according to MSDN
+                    # and 32-bit version shouldn't have the Quadpart according to MSDN
                     try:
                         DllLoadTime = conversion.wintime_to_datetime(
                             entry.LoadTime.QuadPart

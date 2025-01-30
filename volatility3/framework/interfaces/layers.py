@@ -210,7 +210,7 @@ class DataLayerInterface(
         context: interfaces.context.ContextInterface,
         scanner: ScannerInterface,
         progress_callback: constants.ProgressCallback = None,
-        sections: Iterable[Tuple[int, int]] = None,
+        sections: Optional[Iterable[Tuple[int, int]]] = None,
     ) -> Iterable[Any]:
         """Scans a Translation layer by chunk.
 

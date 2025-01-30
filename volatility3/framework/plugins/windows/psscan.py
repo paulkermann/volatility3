@@ -89,7 +89,7 @@ class PsScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         cls,
         context: interfaces.context.ContextInterface,
         layer_name: str,
-        offset: int = None,
+        offset: Optional[int] = None,
         physical: bool = True,
         exclude: bool = False,
     ) -> Callable[[interfaces.objects.ObjectInterface], bool]:

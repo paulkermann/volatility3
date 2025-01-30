@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-from typing import Generator, Iterable, List
+from typing import Generator, Iterable, List, Optional
 
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -133,7 +133,7 @@ class Modules(interfaces.plugins.PluginInterface):
         context: interfaces.context.ContextInterface,
         layer_name: str,
         symbol_table: str,
-        pids: List[int] = None,
+        pids: Optional[List[int]] = None,
     ) -> Generator[str, None, None]:
         """Build a cache of possible virtual layers, in priority starting with
         the primary/kernel layer. Then keep one layer per session by cycling

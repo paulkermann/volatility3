@@ -83,8 +83,7 @@ class TreeNode(interfaces.renderers.TreeNode):
             raise TypeError(
                 "Values must be a list of objects made up of simple types and number the same as the columns"
             )
-        for index in range(len(self._treegrid.columns)):
-            column = self._treegrid.columns[index]
+        for index, column in enumerate(self._treegrid.columns):
             val = values[index]
             if not isinstance(val, (column.type, interfaces.renderers.BaseAbsentValue)):
                 raise TypeError(
@@ -214,7 +213,7 @@ class TreeGrid(interfaces.renderers.TreeGrid):
 
     def populate(
         self,
-        function: interfaces.renderers.VisitorSignature = None,
+        function: Optional[interfaces.renderers.VisitorSignature] = None,
         initial_accumulator: Any = None,
         fail_on_errors: bool = True,
     ) -> Optional[Exception]:
@@ -413,8 +412,7 @@ class ColumnSortKey(interfaces.renderers.ColumnSortKey):
         _index = None
         self._type = None
         self.ascending = ascending
-        for i in range(len(treegrid.columns)):
-            column = treegrid.columns[i]
+        for i, column in enumerate(treegrid.columns):
             if column.name.lower() == column_name.lower():
                 _index = i
                 self._type = column.type

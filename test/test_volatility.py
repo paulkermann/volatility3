@@ -39,7 +39,9 @@ def runvol(args, volatility, python):
     return p.returncode, stdout, stderr
 
 
-def runvol_plugin(plugin, img, volatility, python, pluginargs=[], globalargs=[]):
+def runvol_plugin(plugin, img, volatility, python, pluginargs=None, globalargs=None):
+    pluginargs = pluginargs or []
+    globalargs = globalargs or []
     args = (
         globalargs
         + [
@@ -54,11 +56,66 @@ def runvol_plugin(plugin, img, volatility, python, pluginargs=[], globalargs=[])
     return runvol(args, volatility, python)
 
 
+def runvolshell(img, volshell, python, volshellargs=None, globalargs=None):
+    volshellargs = volshellargs or []
+    globalargs = globalargs or []
+    args = (
+        globalargs
+        + [
+            "--single-location",
+            img,
+            "-q",
+        ]
+        + volshellargs
+    )
+
+    return runvol(args, volshell, python)
+
+
 #
 # TESTS
 #
 
+
+def basic_volshell_test(image, volatility, python, globalargs):
+    # Basic VolShell test to verify requirements and ensure VolShell runs without crashing
+
+    volshell_commands = [
+        "print(ps())",
+        "exit()",
+    ]
+
+    # FIXME: When the minimum Python version includes 3.12, replace the following with:
+    # with tempfile.NamedTemporaryFile(delete_on_close=False) as fd: ...
+    fd, filename = tempfile.mkstemp(suffix=".txt")
+    try:
+        volshell_script = "\n".join(volshell_commands)
+        with os.fdopen(fd, "w") as f:
+            f.write(volshell_script)
+
+        rc, out, _err = runvolshell(
+            img=image,
+            volshell=volatility,
+            python=python,
+            volshellargs=["--script", filename],
+            globalargs=globalargs,
+        )
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(filename)
+
+    assert rc == 0
+    assert out.count(b"\n") >= 4
+
+    return out
+
+
 # WINDOWS
+
+
+def test_windows_volshell(image, volatility, python):
+    out = basic_volshell_test(image, volatility, python, globalargs=["-w"])
+    assert out.count(b"<EPROCESS") > 40
 
 
 def test_windows_pslist(image, volatility, python):
@@ -330,6 +387,11 @@ def test_windows_vadyarascan_yara_string(image, volatility, python):
 
 
 # LINUX
+
+
+def test_linux_volshell(image, volatility, python):
+    out = basic_volshell_test(image, volatility, python, globalargs=["-l"])
+    assert out.count(b"<task_struct") > 100
 
 
 def test_linux_pslist(image, volatility, python):
@@ -646,6 +708,24 @@ def test_linux_page_cache_inodepages(image, volatility, python):
 
     inode_address = hex(0x88001AB5C270)
     inode_dump_filename = f"inode_{inode_address}.dmp"
+
+    rc, out, _err = runvol_plugin(
+        "linux.pagecache.InodePages",
+        image,
+        volatility,
+        python,
+        pluginargs=["--inode", inode_address],
+    )
+
+    assert rc == 0
+    assert out.count(b"\n") > 4
+
+    # PageVAddr PagePAddr MappingAddr .. DumpSafe
+    assert re.search(
+        rb"0xea000054c5f8\s0x18389000\s0x88001ab5c3b0.*?True",
+        out,
+    )
+
     try:
         rc, out, _err = runvol_plugin(
             "linux.pagecache.InodePages",
@@ -656,13 +736,8 @@ def test_linux_page_cache_inodepages(image, volatility, python):
         )
 
         assert rc == 0
-        assert out.count(b"\n") > 4
+        assert out.count(b"\n") >= 4
 
-        # PageVAddr PagePAddr MappingAddr .. DumpSafe
-        assert re.search(
-            rb"0xea000054c5f8\s0x18389000\s0x88001ab5c3b0.*?True",
-            out,
-        )
         assert os.path.exists(inode_dump_filename)
         with open(inode_dump_filename, "rb") as fp:
             inode_contents = fp.read()
@@ -768,6 +843,10 @@ def test_linux_hidden_modules(image, volatility, python):
 
 
 # MAC
+
+
+def test_mac_volshell(image, volatility, python):
+    basic_volshell_test(image, volatility, python, globalargs=["-m"])
 
 
 def test_mac_pslist(image, volatility, python):

@@ -4,7 +4,7 @@
 
 import datetime
 import logging
-from typing import Callable, Dict, Iterable, List
+from typing import Callable, Dict, Iterable, List, Optional
 
 from volatility3.framework import exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -82,7 +82,9 @@ class PsList(interfaces.plugins.PluginInterface):
         return list_tasks
 
     @classmethod
-    def create_pid_filter(cls, pid_list: List[int] = None) -> Callable[[int], bool]:
+    def create_pid_filter(
+        cls, pid_list: Optional[List[int]] = None
+    ) -> Callable[[int], bool]:
         def filter_func(_):
             return False
 

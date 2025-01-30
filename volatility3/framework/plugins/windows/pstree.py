@@ -14,8 +14,7 @@ vollog = logging.getLogger(__name__)
 
 
 class PsTree(interfaces.plugins.PluginInterface):
-    """Plugin for listing processes in a tree based on their parent process
-    ID."""
+    """Plugin for listing processes in a tree based on their parent process ID."""
 
     _required_framework_version = (2, 0, 0)
 

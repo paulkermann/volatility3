@@ -158,7 +158,7 @@ class PESymbolFinder:
 
 class PDBSymbolFinder(PESymbolFinder):
     """
-    PESymbolFinder implementation for  PDB modules
+    PESymbolFinder implementation for PDB modules
     """
 
     def _do_get_address(self, name: str) -> Optional[int]:
@@ -195,7 +195,7 @@ class PDBSymbolFinder(PESymbolFinder):
 
 class ExportSymbolFinder(PESymbolFinder):
     """
-    PESymbolFinder implementation for  PDB modules
+    PESymbolFinder implementation for PDB modules
     """
 
     def _get_name(self, export: pefile.ExportData) -> Optional[str]:
@@ -244,7 +244,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 7, 0)
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     # used for special handling of the kernel PDB file. See later notes
     os_module_name = "ntoskrnl.exe"
@@ -300,7 +300,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
         base_address: int,
     ) -> Optional[pefile.PE]:
         """
-        Attempts to pefile object from the bytes of the PE file
+        Attempts to create a pefile object from the bytes of the PE file
 
         Args:
             pe_table_name: name of the pe types table
@@ -330,9 +330,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return pe_ret
 
-    @staticmethod
+    @classmethod
     def range_info_for_address(
-        ranges: ranges_type, address: int
+        cls, ranges: ranges_type, address: int
     ) -> Optional[range_type]:
         """
         Helper for getting the range information for an address.
@@ -351,8 +351,8 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return None
 
-    @staticmethod
-    def filepath_for_address(ranges: ranges_type, address: int) -> Optional[str]:
+    @classmethod
+    def filepath_for_address(cls, ranges: ranges_type, address: int) -> Optional[str]:
         """
         Helper to get the file path for an address
 
@@ -369,8 +369,8 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return None
 
-    @staticmethod
-    def filename_for_path(filepath: str) -> str:
+    @classmethod
+    def filename_for_path(cls, filepath: str) -> str:
         """
         Consistent way to get the filename regardless of platform
 
@@ -382,8 +382,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
         """
         return ntpath.basename(filepath).lower()
 
-    @staticmethod
+    @classmethod
     def addresses_for_process_symbols(
+        cls,
         context: interfaces.context.ContextInterface,
         config_path: str,
         layer_name: str,
@@ -416,8 +417,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return found_symbols
 
-    @staticmethod
+    @classmethod
     def path_and_symbol_for_address(
+        cls,
         context: interfaces.context.ContextInterface,
         config_path: str,
         collected_modules: collected_modules_type,
@@ -733,8 +735,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return found, remaining
 
-    @staticmethod
+    @classmethod
     def find_symbols(
+        cls,
         context: interfaces.context.ContextInterface,
         config_path: str,
         wanted_modules: PESymbolFinder.cached_value_dict,
@@ -775,8 +778,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return found_symbols, missing_symbols
 
-    @staticmethod
+    @classmethod
     def get_kernel_modules(
+        cls,
         context: interfaces.context.ContextInterface,
         layer_name: str,
         symbol_table: str,
@@ -837,8 +841,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return found_modules
 
-    @staticmethod
+    @classmethod
     def get_vads_for_process_cache(
+        cls,
         vads_cache: Dict[int, ranges_type],
         owner_proc: interfaces.objects.ObjectInterface,
     ) -> Optional[ranges_type]:
@@ -865,8 +870,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         return vads
 
-    @staticmethod
+    @classmethod
     def get_proc_vads_with_file_paths(
+        cls,
         proc: interfaces.objects.ObjectInterface,
     ) -> ranges_type:
         """
@@ -928,8 +934,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
             yield proc, proc_layer_name, vads
 
-    @staticmethod
+    @classmethod
     def get_process_modules(
+        cls,
         context: interfaces.context.ContextInterface,
         layer_name: str,
         symbol_table: str,

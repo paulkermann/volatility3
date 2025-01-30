@@ -104,9 +104,11 @@ class CacheManagerInterface(interfaces.configuration.VersionableInterface):
         for subclazz in framework.class_subclasses(IdentifierProcessor):
             self._classifiers[subclazz.operating_system] = subclazz
 
+    @abstractmethod
     def add_identifier(self, location: str, operating_system: str, identifier: str):
         """Adds an identifier to the store"""
 
+    @abstractmethod
     def find_location(
         self, identifier: bytes, operating_system: Optional[str]
     ) -> Optional[str]:
@@ -120,15 +122,18 @@ class CacheManagerInterface(interfaces.configuration.VersionableInterface):
             The location of the symbols file that matches the identifier
         """
 
+    @abstractmethod
     def get_local_locations(self) -> Iterable[str]:
         """Returns a list of all the local locations"""
 
+    @abstractmethod
     def update(self):
         """Locates all files under the symbol directories.  Updates the cache with additions, modifications and removals.
         This also updates remote locations based on a cache timeout.
 
         """
 
+    @abstractmethod
     def get_identifier_dictionary(
         self, operating_system: Optional[str] = None, local_only: bool = False
     ) -> Dict[bytes, str]:
@@ -142,12 +147,15 @@ class CacheManagerInterface(interfaces.configuration.VersionableInterface):
             A dictionary of identifiers mapped to a location
         """
 
+    @abstractmethod
     def get_identifier(self, location: str) -> Optional[bytes]:
         """Returns an identifier based on a specific location or None"""
 
+    @abstractmethod
     def get_identifiers(self, operating_system: Optional[str]) -> List[bytes]:
         """Returns all identifiers for a particular operating system"""
 
+    @abstractmethod
     def get_location_statistics(
         self, location: str
     ) -> Optional[Tuple[int, int, int, int]]:
@@ -157,6 +165,7 @@ class CacheManagerInterface(interfaces.configuration.VersionableInterface):
             A tuple of base_types, types, enums, symbols, or None is location not found
         """
 
+    @abstractmethod
     def get_hash(self, location: str) -> Optional[str]:
         """Returns the hash of the JSON from within a location ISF"""
 
@@ -292,6 +301,13 @@ class SqliteCache(CacheManagerInterface):
         This also updates remote locations based on a cache timeout.
 
         """
+        if progress_callback is None:
+
+            def dummy_progress(*args, **kargs) -> None:
+                return None
+
+            progress_callback = dummy_progress
+
         on_disk_locations = set(
             [
                 filename

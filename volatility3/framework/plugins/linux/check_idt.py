@@ -5,6 +5,7 @@
 import logging
 from typing import List
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import interfaces, renderers, symbols
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
@@ -26,6 +27,11 @@ class Check_idt(interfaces.plugins.PluginInterface):
                 name="kernel",
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
@@ -99,8 +105,10 @@ class Check_idt(interfaces.plugins.PluginInterface):
 
                 idt_addr = idt_addr & address_mask
 
-            module_name, symbol_name = linux.LinuxUtilities.lookup_module_address(
-                vmlinux, handlers, idt_addr
+            module_name, symbol_name = (
+                linux_utilities_modules.Modules.lookup_module_address(
+                    self.context, vmlinux.name, handlers, idt_addr
+                )
             )
 
             yield (

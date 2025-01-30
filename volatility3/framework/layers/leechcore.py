@@ -129,6 +129,8 @@ if HAS_LEECHCORE:
 
         def readline(self, __size: Optional[int] = ...) -> bytes:
             data = b""
+            if not __size:
+                __size = 0
             while __size > self._chunk_size or __size < 0:
                 data += self.read(self._chunk_size)
                 index = data.find(b"\n")

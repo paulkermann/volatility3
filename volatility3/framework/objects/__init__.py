@@ -152,7 +152,7 @@ class PrimitiveObject(interfaces.objects.ObjectInterface):
         type_name: str,
         object_info: interfaces.objects.ObjectInformation,
         data_format: DataFormatInfo,
-        new_value: TUnion[int, float, bool, bytes, str] = None,
+        new_value: Optional[TUnion[int, float, bool, bytes, str]] = None,
         **kwargs,
     ) -> "PrimitiveObject":
         """Creates the appropriate class and returns it so that the native type
@@ -601,7 +601,7 @@ class Enumeration(interfaces.objects.ObjectInterface, int):
             inverse_choices[v] = k
         return inverse_choices
 
-    def lookup(self, value: int = None) -> str:
+    def lookup(self, value: Optional[int] = None) -> str:
         """Looks up an individual value and returns the associated name.
 
         If multiple identifiers map to the same value, the first matching identifier will be returned
@@ -690,7 +690,7 @@ class Array(interfaces.objects.ObjectInterface, collections.abc.Sequence):
         type_name: str,
         object_info: interfaces.objects.ObjectInformation,
         count: int = 0,
-        subtype: templates.ObjectTemplate = None,
+        subtype: Optional[templates.ObjectTemplate] = None,
     ) -> None:
         super().__init__(context=context, type_name=type_name, object_info=object_info)
         self._vol["count"] = count

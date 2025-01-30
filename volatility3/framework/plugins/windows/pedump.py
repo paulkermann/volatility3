@@ -64,30 +64,27 @@ class PEDump(interfaces.plugins.PluginInterface):
         """
         Returns the filename of the dump file or None
         """
-        try:
-            file_handle = open_method(file_name)
+        with open_method(file_name) as file_handle:
+            try:
+                dos_header = context.object(
+                    pe_table_name + constants.BANG + "_IMAGE_DOS_HEADER",
+                    offset=base,
+                    layer_name=layer_name,
+                )
 
-            dos_header = context.object(
-                pe_table_name + constants.BANG + "_IMAGE_DOS_HEADER",
-                offset=base,
-                layer_name=layer_name,
-            )
+                for offset, data in dos_header.reconstruct():
+                    file_handle.seek(offset)
+                    file_handle.write(data)
+            except (
+                OSError,
+                exceptions.VolatilityException,
+                OverflowError,
+                ValueError,
+            ) as excp:
+                vollog.debug(f"Unable to dump PE file at offset {base}: {excp}")
+                return None
 
-            for offset, data in dos_header.reconstruct():
-                file_handle.seek(offset)
-                file_handle.write(data)
-        except (
-            OSError,
-            exceptions.VolatilityException,
-            OverflowError,
-            ValueError,
-        ) as excp:
-            vollog.debug(f"Unable to dump PE file at offset {base}: {excp}")
-            return None
-        finally:
-            file_handle.close()
-
-        return file_handle.preferred_filename
+            return file_handle.preferred_filename
 
     @classmethod
     def dump_ldr_entry(
@@ -96,7 +93,7 @@ class PEDump(interfaces.plugins.PluginInterface):
         pe_table_name: str,
         ldr_entry: interfaces.objects.ObjectInterface,
         open_method: Type[interfaces.plugins.FileHandlerInterface],
-        layer_name: str = None,
+        layer_name: Optional[str] = None,
         prefix: str = "",
     ) -> Optional[str]:
         """Extracts the PE file referenced an LDR_DATA_TABLE_ENTRY (DLL, kernel module) instance

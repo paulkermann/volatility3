@@ -122,7 +122,7 @@ class BaseSymbolTableInterface:
 
     @property
     def symbols(self) -> Iterable[str]:
-        """Returns an iterator of the Symbol names."""
+        """Returns an iterable of the available symbol names."""
         raise NotImplementedError(
             "Abstract property symbols not implemented by subclass."
         )
@@ -131,7 +131,7 @@ class BaseSymbolTableInterface:
 
     @property
     def types(self) -> Iterable[str]:
-        """Returns an iterator of the Symbol type names."""
+        """Returns an iterable of the available symbol type names."""
         raise NotImplementedError(
             "Abstract property types not implemented by subclass."
         )
@@ -149,7 +149,7 @@ class BaseSymbolTableInterface:
 
     @property
     def enumerations(self) -> Iterable[Any]:
-        """Returns an iterator of the Enumeration names."""
+        """Returns an iterable of the available enumerations."""
         raise NotImplementedError(
             "Abstract property enumerations not implemented by subclass."
         )
@@ -256,6 +256,7 @@ class SymbolSpaceInterface(collections.abc.Mapping):
     """An interface for the container that holds all the symbol-containing
     tables for use within a context."""
 
+    @abstractmethod
     def free_table_name(self, prefix: str = "layer") -> str:
         """Returns an unused table name to ensure no collision occurs when
         inserting a symbol table."""
@@ -365,6 +366,7 @@ class NativeTableInterface(BaseSymbolTableInterface):
 
     @property
     def symbols(self) -> Iterable[str]:
+        """Returns an iterable of the available symbol names."""
         return []
 
     def get_enumeration(self, name: str) -> objects.Template:
@@ -373,7 +375,13 @@ class NativeTableInterface(BaseSymbolTableInterface):
         )
 
     @property
-    def enumerations(self) -> Iterable[str]:
+    def enumerations(self) -> Iterable[Any]:
+        """Returns an iterable of the available enumerations."""
+        return []
+
+    @property
+    def types(self) -> Iterable[str]:
+        """Returns an iterable of the available symbol type names."""
         return []
 
 

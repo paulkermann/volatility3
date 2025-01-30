@@ -984,7 +984,9 @@ if __name__ == "__main__":
         def __init__(self):
             self._max_message_len = 0
 
-        def __call__(self, progress: Union[int, float], description: str = None):
+        def __call__(
+            self, progress: Union[int, float], description: Optional[str] = None
+        ):
             """A simple function for providing text-based feedback.
 
             .. warning:: Only for development use.

@@ -72,7 +72,7 @@ class MultiStringScanner(layers.ScannerInterface):
             return None
 
         for char in value:
-            trie[char] = trie.get(char, {})
+            trie.setdefault(char, {})
             trie = trie[char]
 
         # Mark the end of a string

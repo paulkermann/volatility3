@@ -183,7 +183,7 @@ class TreeGrid(metaclass=ABCMeta):
     @abstractmethod
     def populate(
         self,
-        function: VisitorSignature = None,
+        function: Optional[VisitorSignature] = None,
         initial_accumulator: Any = None,
         fail_on_errors: bool = True,
     ) -> Optional[Exception]:
@@ -235,7 +235,7 @@ class TreeGrid(metaclass=ABCMeta):
         node: Optional[TreeNode],
         function: VisitorSignature,
         initial_accumulator: _Type,
-        sort_key: ColumnSortKey = None,
+        sort_key: Optional[ColumnSortKey] = None,
     ) -> None:
         """Visits all the nodes in a tree, calling function on each one.
 

@@ -362,7 +362,7 @@ class OBJECT_HEADER(objects.StructType):
         return True
 
     def get_object_type(
-        self, type_map: Dict[int, str], cookie: int = None
+        self, type_map: Dict[int, str], cookie: Optional[int] = None
     ) -> Optional[str]:
         """Across all Windows versions, the _OBJECT_HEADER embeds details on
         the type of object (i.e. process, file) but the way its embedded
@@ -376,7 +376,16 @@ class OBJECT_HEADER(objects.StructType):
 
         try:
             # vista and earlier have a Type member
-            self._vol["object_header_object_type"] = self.Type.Name.String
+            length = self.Type.member("Name").Length
+            if length == 0 or length > 128:
+                string = None
+            else:
+                string = self.Type.Name.String
+                if len(string) == 0 or len(string) > 128:
+                    string = None
+
+            self._vol["object_header_object_type"] = string
+
         except AttributeError:
             # windows 7 and later have a TypeIndex, but windows 10
             # further encodes the index value with nt1!ObHeaderCookie

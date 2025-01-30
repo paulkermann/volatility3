@@ -76,6 +76,11 @@ class LinuxIntelStacker(interfaces.automagic.StackerLayerInterface):
                 elif "init_level4_pgt" in table.symbols:
                     layer_class = intel.LinuxIntel32e
                     dtb_symbol_name = "init_level4_pgt"
+                elif "pkmap_count" in table.symbols and table.get_symbol(
+                    "pkmap_count"
+                ).type.count in (512, 2048):
+                    layer_class = intel.LinuxIntelPAE
+                    dtb_symbol_name = "swapper_pg_dir"
                 else:
                     layer_class = intel.LinuxIntel
                     dtb_symbol_name = "swapper_pg_dir"
