@@ -354,6 +354,12 @@ MODULE_MAXIMUM_CORE_SIZE = 20000000
 MODULE_MAXIMUM_CORE_TEXT_SIZE = 20000000
 MODULE_MINIMUM_SIZE = 4096
 
+# VMCOREINFO
+VMCOREINFO_MAGIC = b"VMCOREINFO\x00"
+# Aligned to 4 bytes. See storenote() in kernels < 4.19 or append_kcore_note() in kernels >= 4.19
+VMCOREINFO_MAGIC_ALIGNED = VMCOREINFO_MAGIC + b"\x00"
+OSRELEASE_TAG = b"OSRELEASE="
+
 
 @dataclass
 class TaintFlag:
