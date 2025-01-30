@@ -2,16 +2,11 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
-from typing import Dict, Tuple, Optional
 import logging
+from typing import Dict, Optional, Tuple
 
-from volatility3.framework import constants
-from volatility3.framework.constants.linux import (
-    ELF_IDENT,
-    ELF_CLASS,
-    KSYM_NAME_LEN,
-)
-from volatility3.framework import objects, interfaces, exceptions
+from volatility3.framework import constants, exceptions, interfaces, objects
+from volatility3.framework.constants import linux as linux_constants
 
 vollog = logging.getLogger(__name__)
 
@@ -64,13 +59,13 @@ class elf(objects.StructType):
         ei_class = self._context.object(
             symbol_table_name + constants.BANG + "unsigned char",
             layer_name=layer_name,
-            offset=object_info.offset + ELF_IDENT.EI_CLASS,
+            offset=object_info.offset + linux_constants.ELF_IDENT.EI_CLASS,
         )
 
-        if ei_class == ELF_CLASS.ELFCLASS32:
+        if ei_class == linux_constants.ELF_CLASS.ELFCLASS32:
             self._type_prefix = "Elf32_"
             self._ei_class_size = 32
-        elif ei_class == ELF_CLASS.ELFCLASS64:
+        elif ei_class == linux_constants.ELF_CLASS.ELFCLASS64:
             self._type_prefix = "Elf64_"
             self._ei_class_size = 64
         else:
