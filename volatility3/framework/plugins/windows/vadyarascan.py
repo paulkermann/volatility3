@@ -18,7 +18,7 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
     """Scans all the Virtual Address Descriptor memory maps using yara."""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 1, 1)
+    _version = (1, 1, 2)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -104,8 +104,9 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
                         value,
                     )
 
-    @staticmethod
+    @classmethod
     def get_vad_maps(
+        cls,
         task: interfaces.objects.ObjectInterface,
     ) -> Iterable[Tuple[int, int]]:
         """Creates a map of start/end addresses within a virtual address

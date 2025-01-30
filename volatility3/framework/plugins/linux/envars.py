@@ -18,7 +18,7 @@ class Envars(plugins.PluginInterface):
     """Lists processes with their environment variables"""
 
     _required_framework_version = (2, 13, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -40,8 +40,9 @@ class Envars(plugins.PluginInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def get_task_env_variables(
+        cls,
         context: interfaces.context.ContextInterface,
         task: interfaces.objects.ObjectInterface,
         env_area_max_size: int = 8192,
