@@ -212,30 +212,31 @@ class module(generic.GenericIntelProcess):
         )
         return elf_table_name
 
-    def get_symbols(self):
-        """Get symbols of the module
+    def get_symbols(self) -> Iterable[interfaces.objects.ObjectInterface]:
+        """Get ELF symbol objects for this module"""
 
-        Yields:
-                A symbol object
-        """
+        if not self.section_strtab or self.num_symtab < 1:
+            return None
 
-        if not hasattr(self, "_elf_table_name"):
-            self._elf_table_name = self.get_elf_table_name()
-        if symbols.symbol_table_is_64bit(self._context, self.get_symbol_table_name()):
-            prefix = "Elf64_"
-        else:
-            prefix = "Elf32_"
-        syms = self._context.object(
-            self.get_symbol_table_name() + constants.BANG + "array",
+        elf_table_name = self.get_elf_table_name()
+        symbol_table_name = self.get_symbol_table_name()
+
+        is_64bit = symbols.symbol_table_is_64bit(self._context, symbol_table_name)
+        sym_name = "Elf64_Sym" if is_64bit else "Elf32_Sym"
+        sym_type = self._context.symbol_space.get_type(
+            elf_table_name + constants.BANG + sym_name
+        )
+        elf_syms = self._context.object(
+            symbol_table_name + constants.BANG + "array",
             layer_name=self.vol.layer_name,
             offset=self.section_symtab,
-            subtype=self._context.symbol_space.get_type(
-                self._elf_table_name + constants.BANG + prefix + "Sym"
-            ),
-            count=self.num_symtab + 1,
+            subtype=sym_type,
+            count=self.num_symtab,
         )
-        if self.section_strtab:
-            yield from syms
+        for elf_sym_obj in elf_syms:
+            # Prepare the symbol object for methods like get_name()
+            elf_sym_obj.cached_strtab = self.section_strtab
+            yield elf_sym_obj
 
     def get_symbols_names_and_addresses(self) -> Iterable[Tuple[str, int]]:
         """Get names and addresses for each symbol of the module
@@ -243,34 +244,25 @@ class module(generic.GenericIntelProcess):
         Yields:
                 A tuple for each symbol containing the symbol name and its corresponding value
         """
-
-        for sym in self.get_symbols():
-            sym_arr = self._context.object(
-                self.get_symbol_table_name() + constants.BANG + "array",
-                layer_name=self.vol.native_layer_name,
-                offset=self.section_strtab + sym.st_name,
-            )
-            try:
-                sym_name = utility.array_to_string(
-                    sym_arr, 512
-                )  # 512 is the value of KSYM_NAME_LEN kernel constant
-            except exceptions.InvalidAddressException:
+        layer = self._context.layers[self.vol.layer_name]
+        for elf_sym_obj in self.get_symbols():
+            sym_name = elf_sym_obj.get_name()
+            if not sym_name:
                 continue
-            if sym_name != "":
-                # Normalize sym.st_value offset, which is an address pointing to the symbol value
-                mask = self._context.layers[self.vol.layer_name].address_mask
-                sym_address = sym.st_value & mask
-                yield (sym_name, sym_address)
 
-    def get_symbol(self, wanted_sym_name):
-        """Get symbol value for a given symbol name"""
+                # Normalize sym.st_value offset, which is an address pointing to the symbol value
+            sym_address = elf_sym_obj.st_value & layer.address_mask
+            yield (sym_name, sym_address)
+
+    def get_symbol(self, wanted_sym_name) -> Optional[int]:
+        """Get symbol address for a given symbol name"""
         for sym_name, sym_address in self.get_symbols_names_and_addresses():
             if wanted_sym_name == sym_name:
                 return sym_address
 
         return None
 
-    def get_symbol_by_address(self, wanted_sym_address):
+    def get_symbol_by_address(self, wanted_sym_address) -> Optional[str]:
         """Get symbol name for a given symbol address"""
         for sym_name, sym_address in self.get_symbols_names_and_addresses():
             if wanted_sym_address == sym_address:
@@ -284,6 +276,7 @@ class module(generic.GenericIntelProcess):
             return self.kallsyms.symtab
         elif self.has_member("symtab"):
             return self.symtab
+
         raise AttributeError("Unable to get symtab")
 
     @property
@@ -292,6 +285,7 @@ class module(generic.GenericIntelProcess):
             return int(self.kallsyms.num_symtab)
         elif self.has_member("num_symtab"):
             return int(self.member("num_symtab"))
+
         raise AttributeError("Unable to determine number of symbols")
 
     @property
@@ -302,6 +296,7 @@ class module(generic.GenericIntelProcess):
         # Older kernels
         elif self.has_member("strtab"):
             return self.strtab
+
         raise AttributeError("Unable to get strtab")
 
 
