@@ -357,6 +357,12 @@ MODULE_MINIMUM_SIZE = 4096
 # Kallsyms
 KSYM_NAME_LEN = 512
 
+# VMCOREINFO
+VMCOREINFO_MAGIC = b"VMCOREINFO\x00"
+# Aligned to 4 bytes. See storenote() in kernels < 4.19 or append_kcore_note() in kernels >= 4.19
+VMCOREINFO_MAGIC_ALIGNED = VMCOREINFO_MAGIC + b"\x00"
+OSRELEASE_TAG = b"OSRELEASE="
+
 
 @dataclass
 class TaintFlag:
