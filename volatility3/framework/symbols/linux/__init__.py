@@ -88,7 +88,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
     """Class with multiple useful linux functions."""
 
-    _version = (2, 2, 1)
+    _version = (2, 3, 0)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -118,8 +118,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         Args:
             task (task_struct): A reference task
             mnt (vfsmount or mount): A mounted filesystem or a mount point.
-                - kernels < 3.3.8 type is 'vfsmount'
-                - kernels >= 3.3.8 type is 'mount'
+                - kernels < 3.3 type is 'vfsmount'
+                - kernels >= 3.3 type is 'mount'
 
         Returns:
             str: Pathname of the mount point relative to the task's root directory.
@@ -141,14 +141,28 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
             rdentry (dentry *): A pointer to the root dentry
             rmnt (vfsmount *): A pointer to the root vfsmount
             dentry (dentry *): A pointer to the dentry
-            vfsmnt (vfsmount *): A pointer to the vfsmount
+            vfsmnt (vfsmount/vfsmount *): A vfsmount object (kernels >= 3.3) or a
+                vfsmount pointer (kernels < 3.3)
 
         Returns:
             str: Pathname of the mount point or file
         """
 
+        if not (rdentry and rdentry.is_readable() and rmnt and rmnt.is_readable()):
+            return ""
+
+        if isinstance(vfsmnt, objects.Pointer) and not (
+            vfsmnt and vfsmnt.is_readable()
+        ):
+            # vfsmnt can be the vfsmount object itself (>=3.3) or a vfsmount * (<3.3)
+            return ""
+
         path_reversed = []
-        while dentry != rdentry or not vfsmnt.is_equal(rmnt):
+        while (
+            dentry
+            and dentry.is_readable()
+            and (dentry != rdentry or not vfsmnt.is_equal(rmnt))
+        ):
             if dentry == vfsmnt.get_mnt_root() or dentry.is_root():
                 # Escaped?
                 if dentry != vfsmnt.get_mnt_root():
@@ -447,6 +461,10 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         type_dec = vmlinux.get_type(type_name)
         member_offset = type_dec.relative_child_offset(member_name)
         container_addr = addr - member_offset
+        layer = vmlinux.context.layers[vmlinux.layer_name]
+        if not layer.is_valid(container_addr):
+            return None
+
         return vmlinux.object(
             object_type=type_name, offset=container_addr, absolute=True
         )
