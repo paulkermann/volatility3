@@ -39,7 +39,7 @@ class VMCoreInfo(plugins.PluginInterface):
         ):
             for key, value in vmcoreinfo.items():
                 if key.startswith("SYMBOL(") or key == "KERNELOFFSET":
-                    value = f"0x{value:x}"
+                    value = hex(value)
                 else:
                     value = str(value)
 
