@@ -138,7 +138,7 @@ class ABCKmsg(ABC):
     def get_string(self, addr: int, length: int) -> Union[str, None]:
         layer = self._context.layers[self.layer_name]
         if not layer.is_valid(addr, length):
-            vollog.error("Failed to read log record at address 0x%x", addr)
+            vollog.warning("Failed to read log record at address 0x%x", addr)
             return None
 
         txt = layer.read(addr, length)
