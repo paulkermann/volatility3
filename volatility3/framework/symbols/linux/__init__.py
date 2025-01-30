@@ -903,7 +903,7 @@ class VMCoreInfo(interfaces.configuration.VersionableInterface):
         """Converts the input VMCoreInfo data buffer into a dictionary"""
 
         # Ensure the whole buffer is printable
-        if not all(c in string.printable.encode() for c in vmcoreinfo_data):
+        if not all(char in string.printable.encode() for char in vmcoreinfo_data):
             # Abort, we are in the wrong place
             return None
 
