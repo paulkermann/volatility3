@@ -212,10 +212,8 @@ class module(generic.GenericIntelProcess):
         )
         return elf_table_name
 
-    def get_symbols_ex(
-        self,
-    ) -> Iterable[Tuple[int, interfaces.objects.ObjectInterface]]:
-        """Get ELF symbol objects and their index for this module"""
+    def get_symbols(self) -> Iterable[interfaces.objects.ObjectInterface]:
+        """Get ELF symbol objects for this module"""
 
         if not self.section_strtab or self.num_symtab < 1:
             return None
@@ -235,17 +233,9 @@ class module(generic.GenericIntelProcess):
             subtype=sym_type,
             count=self.num_symtab,
         )
-        for elf_sym_index, elf_sym_obj in enumerate(elf_syms):
+        for elf_sym_obj in elf_syms:
             # Prepare the symbol object for methods like get_name()
             elf_sym_obj.cached_strtab = self.section_strtab
-            yield elf_sym_index, elf_sym_obj
-
-    def get_symbols(
-        self,
-    ) -> Iterable[interfaces.objects.ObjectInterface]:
-        """Get ELF symbol objects for this module"""
-
-        for _elf_sym_index, elf_sym_obj in self.get_symbols_ex():
             yield elf_sym_obj
 
     def get_symbols_names_and_addresses(self) -> Iterable[Tuple[str, int]]:
