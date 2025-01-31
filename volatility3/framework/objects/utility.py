@@ -120,10 +120,10 @@ def address_to_string(
         The decoded string extracted from memory.
     """
     if not isinstance(address, int):
-        raise TypeError("It takes an int")
+        raise TypeError("Address must be a valid integer")
 
     if count < 1:
-        raise ValueError("It requires a positive count")
+        raise ValueError("Count must be greater than 0")
 
     layer = context.layers[layer_name]
     text = b""
