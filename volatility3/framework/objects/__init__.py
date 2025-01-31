@@ -356,8 +356,9 @@ class String(PrimitiveObject, str):
             ),
             **params,
         )
-        if value.find("\x00") >= 0:
-            value = value[: value.find("\x00")]
+        index = value.find("\x00")
+        if index >= 0:
+            value = value[:index]
         return value
 
     class VolTemplateProxy(interfaces.objects.ObjectInterface.VolTemplateProxy):
