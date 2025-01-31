@@ -262,7 +262,10 @@ class MMVAD_SHORT(objects.StructType):
     def get_commit_charge(self):
         """Get the VAD's commit charge (number of committed pages)"""
 
-        if self.has_member("u1") and self.u1.has_member("VadFlags1"):
+        if self.has_member("CommitCharge"):
+            return self.CommitCharge
+
+        elif self.has_member("u1") and self.u1.has_member("VadFlags1"):
             return self.u1.VadFlags1.CommitCharge
 
         elif self.has_member("u") and self.u.has_member("VadFlags"):
