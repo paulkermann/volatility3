@@ -341,13 +341,6 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
     ):
         try:
             files = task.files
-        except exceptions.InvalidAddressException:
-            return None
-
-        if not files.is_readable():
-            return None
-
-        try:
             fd_table = files.get_fds()
         except exceptions.InvalidAddressException:
             return None
