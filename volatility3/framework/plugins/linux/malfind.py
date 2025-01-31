@@ -54,10 +54,7 @@ class Malfind(interfaces.plugins.PluginInterface):
             vollog.debug(
                 f"Injections : processing PID {task.pid} : VMA {vma_name} : {hex(vma.vm_start)}-{hex(vma.vm_end)}"
             )
-            if (
-                vma.is_suspicious(proc_layer)
-                and vma_name != "[vdso]"
-            ):
+            if vma.is_suspicious(proc_layer) and vma_name != "[vdso]":
                 data = proc_layer.read(vma.vm_start, 64, pad=True)
                 yield vma, vma_name, data
 
