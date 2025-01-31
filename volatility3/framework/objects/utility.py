@@ -127,7 +127,7 @@ def address_to_string(
 
     layer = context.layers[layer_name]
     text = b""
-    while len(text) <= count:
+    while len(text) < count:
         current_block_size = min(count - len(text), block_size)
         temp_text = layer.read(address + len(text), current_block_size)
         idx = temp_text.find(b"\x00")
