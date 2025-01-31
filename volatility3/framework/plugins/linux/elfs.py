@@ -177,7 +177,7 @@ class Elfs(plugins.PluginInterface):
                         name,
                         format_hints.Hex(vma.vm_start),
                         format_hints.Hex(vma.vm_end),
-                        path,
+                        path or renderers.NotAvailableValue(),
                         file_output,
                     ),
                 )

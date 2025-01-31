@@ -1056,7 +1056,7 @@ class vm_area_struct(objects.StructType):
         parent_layer = self._context.layers[self.vol.layer_name]
         return self.vm_pgoff << parent_layer.page_shift
 
-    def get_name(self, context, task):
+    def _do_get_name(self, context, task) -> str:
         if self.vm_file != 0:
             fname = linux.LinuxUtilities.path_for_file(context, task, self.vm_file)
         elif self.vm_start <= task.mm.start_brk and self.vm_end >= task.mm.brk:
@@ -1071,6 +1071,12 @@ class vm_area_struct(objects.StructType):
         else:
             fname = "Anonymous Mapping"
         return fname
+
+    def get_name(self, context, task) -> Optional[str]:
+        try:
+            return self._do_get_name(context, task)
+        except exceptions.InvalidAddressException:
+            return None
 
     # used by malfind
     def is_suspicious(self, proclayer=None):

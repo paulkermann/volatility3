@@ -56,10 +56,10 @@ class Malfind(interfaces.plugins.PluginInterface):
             )
             if (
                 vma.is_suspicious(proc_layer)
-                and vma.get_name(self.context, task) != "[vdso]"
+                and vma_name != "[vdso]"
             ):
                 data = proc_layer.read(vma.vm_start, 64, pad=True)
-                yield vma, data
+                yield vma, vma_name, data
 
     def _generator(self, tasks):
         # determine if we're on a 32 or 64 bit kernel
@@ -71,7 +71,7 @@ class Malfind(interfaces.plugins.PluginInterface):
         for task in tasks:
             process_name = utility.array_to_string(task.comm)
 
-            for vma, data in self._list_injections(task):
+            for vma, vma_name, data in self._list_injections(task):
                 if is_32bit_arch:
                     architecture = "intel"
                 else:
@@ -88,6 +88,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                         process_name,
                         format_hints.Hex(vma.vm_start),
                         format_hints.Hex(vma.vm_end),
+                        vma_name or renderers.NotAvailableValue(),
                         vma.get_protection(),
                         format_hints.HexBytes(data),
                         disasm,
@@ -103,6 +104,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 ("Process", str),
                 ("Start", format_hints.Hex),
                 ("End", format_hints.Hex),
+                ("Path", str),
                 ("Protection", str),
                 ("Hexdump", format_hints.HexBytes),
                 ("Disasm", interfaces.renderers.Disassembly),
