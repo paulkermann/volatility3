@@ -122,11 +122,13 @@ class PsCallStack(plugins.PluginInterface):
             stack_value = int.from_bytes(stack_value_bytes, byteorder=byte_order)
 
             kassymbol = kas.lookup_address(stack_value)
+            sp_address = current_sp & vmlinux_layer.address_mask
+            stack_value &= vmlinux_layer.address_mask
             if kassymbol:
                 module_name = kassymbol.module_name or renderers.NotAvailableValue()
                 yield StackEntry(
                     position=idx,
-                    address=current_sp,
+                    address=sp_address,
                     value=stack_value,
                     name=kassymbol.name,
                     type=kassymbol.type,
@@ -135,7 +137,7 @@ class PsCallStack(plugins.PluginInterface):
             elif include_unresolved:
                 yield StackEntry(
                     position=idx,
-                    address=current_sp,
+                    address=sp_address,
                     value=stack_value,
                 )
 
