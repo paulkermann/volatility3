@@ -93,10 +93,13 @@ class MountInfo(plugins.PluginInterface):
             return None
 
         mnt_root_path = mnt_root.path()
-        superblock = mnt.get_mnt_sb()
 
         mnt_id: int = mnt.mnt_id
         parent_id: int = mnt.mnt_parent.mnt_id
+
+        superblock = mnt.get_mnt_sb()
+        if not (superblock and superblock.is_readable()):
+            return None
 
         st_dev = f"{superblock.major}:{superblock.minor}"
 
