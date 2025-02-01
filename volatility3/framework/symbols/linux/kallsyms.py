@@ -495,6 +495,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         Returns:
             Symbol address
         """
+        layer = self._context.layers[self._layer_name]
         if self._kallsyms_offsets_address:
             # kernels >= 4.6 - Addresses are relative to kallsyms_relative_base
             # It assumes: CONFIG_KALLSYMS_BASE_RELATIVE=y and CONFIG_KALLSYMS_ABSOLUTE_PERCPU=y
@@ -507,7 +508,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
                 return self._kallsyms_relative_base - 1 - sym_addr
 
             # Positive offsets are absolute values
-            return sym_addr
+            return sym_addr & layer.address_mask
         elif self._kas_config.addresses_address:
             # kernels < 4.6 - Addresses are absolute
             # unsigned long kallsyms_addresses[]
@@ -516,7 +517,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
                 self._long_size,
                 signed=False,
             )
-            return kallsyms_address
+            return kallsyms_address & layer.address_mask
         else:
             raise exceptions.VolatilityException("Unsupported kernel")
 
