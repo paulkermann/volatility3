@@ -1574,7 +1574,9 @@ class vfsmount(objects.StructType):
             'True' if the kernel lacks the 'mount' struct, typically indicating kernel < 3.3.
         """
 
-        return not self._context.symbol_space.has_type("mount")
+        return (not self._context.symbol_space.has_type("mount")) and self.has_member(
+            "mnt_parent"
+        )
 
     def is_equal(self, vfsmount_ptr) -> bool:
         """Helper to make sure it is comparing two pointers to 'vfsmount'.
