@@ -7,7 +7,7 @@ import contextlib
 import functools
 import logging
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Tuple, Optional, Union, Dict
+from typing import List, Tuple, Optional, Union, Dict, Generator, Iterator
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3 import framework
@@ -429,13 +429,57 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         )
 
     @classmethod
-    def walk_internal_list(cls, vmlinux, struct_name, list_member, list_start):
+    def walk_internal_list(
+        cls,
+        vmlinux: interfaces.context.ModuleInterface,
+        struct_name: str,
+        list_member: str,
+        list_start: interfaces.objects.ObjectInterface,
+        max_count: int = 4096,
+    ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
+        """
+        An API that provides generic, smear-resistant enumeration of embedded lists
+
+        Args:
+            vmlinux:
+            struct_name: name of the structure of the list elements
+            list_member: name of the list_member holding the internal list
+            list_start: Starting (head) member of the list
+            max_count: Optional maximum amount of list elements that will be yielded
+
+        Returns:
+            Instances of `struct_name`
+        """
+
+        count = 0
+        seen = set()
+
         while list_start:
+            if list_start.vol.offset in seen:
+                vollog.debug(
+                    "walk_internal_list: Repeat entry found. Stopping enumeration"
+                )
+                break
+            seen.add(list_start.vol.offset)
+
+            if not (list_start and list_start.is_readable()):
+                break
+
             list_struct = vmlinux.object(
-                object_type=struct_name, offset=list_start.vol.offset
+                object_type=struct_name, offset=list_start.vol.offset, absolute=True
             )
+
             yield list_struct
+
             list_start = getattr(list_struct, list_member)
+
+            if count == max_count:
+                vollog.debug(
+                    f"walk_internal_list: Breaking list enumeration at maximum allowed count of {count}"
+                )
+                break
+
+            count += 1
 
     @classmethod
     def container_of(
