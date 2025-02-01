@@ -538,11 +538,14 @@ class Sockstat(plugins.PluginInterface):
                 continue
             sock = socket.sk.dereference()
 
-            sock_type = sock.get_type()
-            family = sock.get_family()
+            try:
+                sock_type = sock.get_type()
+                family = sock.get_family()
+                sock_handler = SockHandlers(vmlinux, task)
+                sock_fields = sock_handler.process_sock(sock)
+            except exceptions.InvalidAddressException:
+                continue
 
-            sock_handler = SockHandlers(vmlinux, task)
-            sock_fields = sock_handler.process_sock(sock)
             if not sock_fields:
                 continue
 
