@@ -88,6 +88,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
         self.optional_set_type_class("maple_tree", extensions.maple_tree)
 
         self.optional_set_type_class("latch_tree_root", extensions.latch_tree_root)
+        self.optional_set_type_class("kernel_symbol", extensions.kernel_symbol)
 
 
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
