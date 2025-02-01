@@ -1101,7 +1101,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             vmlinux.has_type("ftrace_mod_map") and vmlinux.has_type("ftrace_mod_func")
         ):
             # kernel < 4.15 aba4b5c22cbac296f4081a0476d0c55828f135b4
-            vollog.warning(
+            vollog.info(
                 "Unsupported Ftrace kallsyms implementation. Ignore this if it's a kernel < 4.15"
             )
             return None
@@ -1208,7 +1208,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             list_type, list_head_member = "bpf_prog_aux", "ksym_lnode"
         else:
             # kernels < 3.18
-            vollog.warning(
+            vollog.info(
                 "Unsupported BPF kallsysms implementation. Don't worry if kernel < 3.18"
             )
             return None
@@ -1303,7 +1303,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             sym_size = symbol_end - symbol_start
         else:
             # kernel < 4.11
-            vollog.warning(
+            vollog.info(
                 "Unsupported BPF kallsyms implementation. Ignore this if it's a kernel < 4.11"
             )
             return None
