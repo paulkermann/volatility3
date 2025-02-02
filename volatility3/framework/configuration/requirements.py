@@ -641,7 +641,10 @@ class ModuleRequirement(
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
-        return interfaces.context.ModuleInterface.get_requirements()
+        return [
+            IntRequirement(name="offset"),
+            SymbolTableRequirement(name="symbol_table_name"),
+        ]
 
     def unsatisfied(
         self, context: "interfaces.context.ContextInterface", config_path: str

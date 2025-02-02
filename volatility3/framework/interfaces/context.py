@@ -158,14 +158,6 @@ class ModuleInterface(interfaces.configuration.ConfigurableInterface):
         super().__init__(context, config_path)
         self._module_name = name
 
-    @classmethod
-    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
-        # Can't include the translation layer without knowing the architectures
-        return [
-            SymbolTableRequirement(name="symbol_table_name"),
-            IntRequirement(name="offset"),
-        ]
-
     @property
     def _layer_name(self) -> str:
         return self.config["layer_name"]

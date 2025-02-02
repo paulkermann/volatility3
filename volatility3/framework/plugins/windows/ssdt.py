@@ -89,9 +89,8 @@ class SSDT(plugins.PluginInterface):
             self.context, layer_name, kernel.symbol_table_name
         )
 
-        ntkrnlmp = self.context.module(
-            kernel.symbol_table_name, layer_name=kernel.offset, offset=kvo
-        )
+        ntkrnlmp = kernel
+        kvo = kernel.offset
 
         # this is just one way to enumerate the native (NT) service table.
         # to do the same thing for the Win32K service table, we would need Win32K.sys symbol support
