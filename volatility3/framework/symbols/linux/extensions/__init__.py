@@ -3225,8 +3225,7 @@ class kernel_symbol(objects.StructType):
         long_mask = (1 << layer.bits_per_register) - 1
         return (self.vol.offset + off) & long_mask
 
-    @property
-    def name(self) -> str:
+    def get_name(self) -> str:
         if self.has_member("name_offset"):
             # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
             # See 7290d58095712a89f845e1bca05334796dd49ed2
@@ -3246,8 +3245,7 @@ class kernel_symbol(objects.StructType):
 
         return name_bytes.decode("utf-8", errors="ignore")
 
-    @property
-    def value(self) -> int:
+    def get_value(self) -> int:
         if self.has_member("value_offset"):
             # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
             # See 7290d58095712a89f845e1bca05334796dd49ed2
@@ -3258,8 +3256,7 @@ class kernel_symbol(objects.StructType):
 
         raise AttributeError("Unsupported kernel_symbol type implementation")
 
-    @property
-    def namespace(self) -> str:
+    def get_namespace(self) -> str:
         if self.has_member("namespace_offset"):
             # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
             # See 7290d58095712a89f845e1bca05334796dd49ed2

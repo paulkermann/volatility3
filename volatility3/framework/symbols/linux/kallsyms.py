@@ -722,7 +722,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
                 self._kas_config.stop_ksymtab,
             )
 
-        return kernel_symbol is not None and kernel_symbol.value == address
+        return kernel_symbol is not None and kernel_symbol.get_value() == address
 
     def _elfsym_to_kassymbol(
         self,
@@ -1026,7 +1026,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         name: str,
         kernel_symbol: interfaces.objects.ObjectInterface,
     ) -> int:
-        return self._cmp_symbol_name(name, kernel_symbol.name)
+        return self._cmp_symbol_name(name, kernel_symbol.get_name())
 
     def _cmp_symbol_name(
         self,
