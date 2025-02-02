@@ -842,6 +842,47 @@ def test_linux_hidden_modules(image, volatility, python):
     assert out.count(b"\n") >= 4
 
 
+def test_linux_kallsyms(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.kallsyms.Kallsyms",
+        image,
+        volatility,
+        python,
+        pluginargs=["--modules"],
+    )
+    # linux-sample-1.bin has no hidden modules.
+    # This validates that plugin requirements are met and exceptions are not raised.
+    assert rc == 0
+    assert out.count(b"\n") > 1000
+
+    # Addr	Type	Size	Exported	SubSystem	ModuleName	SymbolName	Description
+    # 0xffffa009eba9	t	28	False	module	usbcore	usb_mon_register	Symbol is in the text (code) section
+    assert re.search(
+        rb"0xffffa009eba9\s+t\s+28\s+False\s+module\s+usbcore\s+usb_mon_register\s+Symbol is in the text \(code\) section",
+        out,
+    )
+
+
+def test_linux_pscallstack(image, volatility, python):
+    rc, out, _err = runvol_plugin(
+        "linux.pscallstack.PsCallStack",
+        image,
+        volatility,
+        python,
+        pluginargs=["--pid", "1"],
+    )
+
+    assert rc == 0
+    assert out.count(b"\n") > 30
+
+    # TID     Comm    Position        Address Value   Name    Type    Module
+    # 1       init    39      0x88001f999a40  0xffff81109039  do_select       T       kernel
+    assert re.search(
+        rb"1\s+init\s+39\s+0x88001f999a40.*?0xffff81109039\s+do_select\s+T\s+kernel",
+        out,
+    )
+
+
 # MAC
 
 

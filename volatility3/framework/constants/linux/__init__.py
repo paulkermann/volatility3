@@ -356,6 +356,27 @@ MODULE_MINIMUM_SIZE = 4096
 
 # Kallsyms
 KSYM_NAME_LEN = 512
+NM_TYPES_DESC = {
+    "a": "Symbol is absolute and doesn't change during linking",
+    "b": "Symbol in the BSS section, typically holding zero-initialized or uninitialized data",
+    "c": "Symbol is common, typically holding uninitialized data",
+    "d": "Symbol is in the initialized data section",
+    "g": "Symbol is in an initialized data section for small objects",
+    "i": "Symbol is an indirect reference to another symbol",
+    "N": "Symbol is a debugging symbol",
+    "n": "Symbol is in a non-data, non-code, non-debug read-only section",
+    "p": "Symbol is in a stack unwind section",
+    "r": "Symbol is in a read only data section",
+    "s": "Symbol is in an uninitialized or zero-initialized data section for small objects",
+    "t": "Symbol is in the text (code) section",
+    "U": "Symbol is undefined",
+    "u": "Symbol is a unique global symbol",
+    "V": "Symbol is a weak object, with a default value",
+    "v": "Symbol is a weak object",
+    "W": "Symbol is a weak symbol but not marked as a weak object symbol, with a default value",
+    "w": "Symbol is a weak symbol but not marked as a weak object symbol",
+    "?": "Symbol type is unknown",
+}
 
 # VMCOREINFO
 VMCOREINFO_MAGIC = b"VMCOREINFO\x00"

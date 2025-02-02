@@ -10,7 +10,17 @@ import binascii
 import stat
 import datetime
 import socket as socket_module
-from typing import Generator, Iterable, Iterator, Optional, Tuple, List, Union, Dict
+from typing import (
+    Generator,
+    Iterable,
+    Iterator,
+    Optional,
+    Tuple,
+    List,
+    Union,
+    Dict,
+    Callable,
+)
 
 from volatility3.framework import constants, exceptions, objects, interfaces, symbols
 from volatility3.framework.renderers import conversion
@@ -166,37 +176,43 @@ class module(generic.GenericIntelProcess):
         """Get the name of the module as a string"""
         return utility.array_to_string(self.name)
 
-    def _get_sect_count(self, grp):
+    def _get_sect_count(self, grp: interfaces.objects.ObjectInterface) -> int:
         """Try to determine the number of valid sections"""
+        symbol_table_name = self.get_symbol_table_name()
         arr = self._context.object(
-            self.get_symbol_table_name() + constants.BANG + "array",
+            symbol_table_name + constants.BANG + "array",
             layer_name=self.vol.layer_name,
             offset=grp.attrs,
             subtype=self._context.symbol_space.get_type(
-                self.get_symbol_table_name() + constants.BANG + "pointer"
+                symbol_table_name + constants.BANG + "pointer"
             ),
             count=25,
         )
 
         idx = 0
-        while arr[idx]:
+        while arr[idx] and arr[idx].is_readable():
             idx = idx + 1
         return idx
 
-    def get_sections(self):
-        """Get sections of the module"""
+    @functools.cached_property
+    def number_of_sections(self) -> int:
         if self.sect_attrs.has_member("nsections"):
-            num_sects = self.sect_attrs.nsections
-        else:
-            num_sects = self._get_sect_count(self.sect_attrs.grp)
+            return self.sect_attrs.nsections
+
+        return self._get_sect_count(self.sect_attrs.grp)
+
+    def get_sections(self) -> Iterable[interfaces.objects.ObjectInterface]:
+        """Get a list of section attributes for the given module."""
+
+        symbol_table_name = self.get_symbol_table_name()
         arr = self._context.object(
-            self.get_symbol_table_name() + constants.BANG + "array",
+            symbol_table_name + constants.BANG + "array",
             layer_name=self.vol.layer_name,
             offset=self.sect_attrs.attrs.vol.offset,
             subtype=self._context.symbol_space.get_type(
-                self.get_symbol_table_name() + constants.BANG + "module_sect_attr"
+                symbol_table_name + constants.BANG + "module_sect_attr"
             ),
-            count=num_sects,
+            count=self.number_of_sections,
         )
 
         yield from arr
@@ -254,6 +270,43 @@ class module(generic.GenericIntelProcess):
             sym_address = elf_sym_obj.st_value & layer.address_mask
             yield (sym_name, sym_address)
 
+    @functools.lru_cache
+    def get_module_address_boundaries(self) -> Tuple[int, int]:
+        """Return the module address boundaries based on its symbol addresses"""
+
+        if not self.section_strtab or self.num_symtab < 1:
+            return None
+
+        elf_table_name = self.get_elf_table_name()
+        symbol_table_name = self.get_symbol_table_name()
+
+        is_64bit = symbols.symbol_table_is_64bit(self._context, symbol_table_name)
+        sym_name = "Elf64_Sym" if is_64bit else "Elf32_Sym"
+        sym_type = self._context.symbol_space.get_type(
+            elf_table_name + constants.BANG + sym_name
+        )
+        elf_syms = self._context.object(
+            symbol_table_name + constants.BANG + "array",
+            layer_name=self.vol.layer_name,
+            offset=self.section_symtab,
+            subtype=sym_type,
+            count=self.num_symtab,
+        )
+        # They should be sorted, but just in case
+        elf_syms_sorted = sorted(elf_syms, key=lambda x: x.st_value)
+
+        layer = self._context.layers[self.vol.layer_name]
+
+        # The first elf_sym is null
+        first_symbol = elf_syms_sorted[1]
+        last_symbol = elf_syms_sorted[-1]
+        minimum_address = first_symbol.st_value & layer.address_mask
+        maximum_address = (
+            last_symbol.st_value & layer.address_mask + last_symbol.st_size
+        )
+
+        return minimum_address, maximum_address
+
     def get_symbol(self, wanted_sym_name) -> Optional[int]:
         """Get symbol address for a given symbol name"""
         for sym_name, sym_address in self.get_symbols_names_and_addresses():
@@ -298,6 +351,38 @@ class module(generic.GenericIntelProcess):
             return self.strtab
 
         raise AttributeError("Unable to get strtab")
+
+    @property
+    def section_typetab(self):
+        if self.has_member("kallsyms") and self.kallsyms.has_member("typetab"):
+            # kernels >= 4.5 8244062ef1e54502ef55f54cced659913f244c3e: kallsyms was added
+            # kernels >= 5.2 1c7651f43777cdd59c1aaa82c87324d3e7438c7b: types have its own array
+            return self.kallsyms.typetab
+
+        raise AttributeError("Unable to get typetab section, it needs a kernel >= 5.2")
+
+    def get_symbol_type(
+        self, symbol: interfaces.objects.ObjectInterface, symbol_index: int
+    ) -> str:
+        """Determines the type of a given ELF symbol.
+
+        Args:
+            symbol: The ELF symbol object (elf_sym)
+            symbol_index: The index of the symbol within the type table
+
+        Returns:
+            A single-character string representing the symbol type
+        """
+        if self.has_member("kallsyms") and self.kallsyms.has_member("typetab"):
+            # kernels >= 5.2 1c7651f43777cdd59c1aaa82c87324d3e7438c7b types have its own array
+            layer = self._context.layers[self.vol.layer_name]
+            sym_type = layer.read(self.section_typetab + symbol_index, 1)
+            sym_type = sym_type.decode("utf-8", errors="ignore")
+        else:
+            # kernels < 5.2 the type was stored in the st_info
+            sym_type = chr(symbol.st_info)
+
+        return sym_type
 
 
 class task_struct(generic.GenericIntelProcess):
@@ -369,6 +454,19 @@ class task_struct(generic.GenericIntelProcess):
         return self._add_process_layer(
             self._context, dtb, config_prefix, preferred_name
         )
+
+    def get_address_space_layer(
+        self,
+    ) -> Optional[interfaces.layers.TranslationLayerInterface]:
+        """Returns the task layer for this task's address space."""
+
+        task_layer_name = (
+            self.vol.layer_name if self.is_kernel_thread else self.add_process_layer()
+        )
+        if not task_layer_name:
+            return None
+
+        return self._context.layers[task_layer_name]
 
     def get_process_memory_sections(
         self, heap_only: bool = False
@@ -479,6 +577,15 @@ class task_struct(generic.GenericIntelProcess):
             if self.is_being_ptraced
             else None
         )
+
+    @property
+    def state(self):
+        if self.has_member("__state"):
+            return self.member("__state")
+        elif self.has_member("state"):
+            return self.member("state")
+        else:
+            raise AttributeError("Unsupported task_struct: Cannot find state")
 
     def _get_task_start_time(self) -> datetime.timedelta:
         """Returns the task's monotonic start_time as a timedelta.
@@ -2055,6 +2162,10 @@ class xdp_sock(objects.StructType):
 
 
 class bpf_prog(objects.StructType):
+    _BPF_PROG_CHUNK_SHIFT = 6
+    _BPF_PROG_CHUNK_SIZE = 1 << _BPF_PROG_CHUNK_SHIFT
+    _BPF_PROG_CHUNK_MASK = ~(_BPF_PROG_CHUNK_SIZE - 1)
+
     def get_type(self) -> Union[str, None]:
         """Returns a string with the eBPF program type"""
 
@@ -2098,6 +2209,58 @@ class bpf_prog(objects.StructType):
             return None
 
         return self.aux.get_name()
+
+    def bpf_jit_binary_hdr_address(self) -> int:
+        """Return the jitted BPF program start address
+        Based on bpf_jit_binary_hdr()
+
+        Returns:
+            The BPF program address
+        """
+        vmlinux = linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
+        vmlinux_layer = vmlinux.context.layers[vmlinux.layer_name]
+
+        # In 5.18 (33c9805860e584b194199cab1a1e81f4e6395408) <= kernels < 6.0 (1d5f82d9dd477d5c66e0214a68c3e4f308eadd6d)
+        # 'bpf_prog_aux' has a 'use_bpf_prog_pack' member
+        bpf_prog_aux_has_use_bpf_prog_pack = vmlinux.get_type(
+            "bpf_prog_aux"
+        ).has_member("use_bpf_prog_pack")
+        if bpf_prog_aux_has_use_bpf_prog_pack and self.aux.use_bpf_prog_pack:
+            long_mask = (1 << vmlinux_layer.bits_per_register) - 1
+            addr_mask = self._BPF_PROG_CHUNK_MASK & long_mask
+        else:
+            addr_mask = vmlinux_layer.page_mask
+
+        real_start = self.bpf_func
+        return real_start & addr_mask
+
+    def get_address_region(self) -> Tuple[int, int]:
+        """Returns the start and end memory addresses of the BPF program.
+        Based on bpf_get_prog_addr_region()
+
+        Returns:
+            A tuple with the addresses representing the memory range (start, end) of the BPF program.
+        """
+        vmlinux = linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
+        vmlinux_layer = vmlinux.context.layers[vmlinux.layer_name]
+        # Based on bpf_get_prog_addr_region()
+        bpf_start_address = self.bpf_jit_binary_hdr_address()
+
+        if vmlinux.has_type("bpf_binary_header"):
+            # kernels >= 3.11 314beb9bcabfd6b4542ccbced2402af2c6f6142a
+            bpf_binary_header = vmlinux.object(
+                object_type="bpf_binary_header", offset=bpf_start_address, absolute=True
+            )
+            pages = bpf_binary_header.pages
+        else:
+            # kernels < 3.11 The first member is always the size
+            pages = vmlinux.object(
+                object_type="unsigned int", offset=bpf_start_address, absolute=True
+            )
+
+        bpf_end_address = bpf_start_address + pages * vmlinux_layer.page_size
+
+        return bpf_start_address, bpf_end_address
 
 
 class bpf_prog_aux(objects.StructType):
@@ -2977,3 +3140,136 @@ class scatterlist(objects.StructType):
         physical_layer = self._context.layers[physical_layer_name]
         for sg in self.for_each_sg():
             yield from physical_layer.read(sg.dma_address, sg._sg_dma_len())
+
+
+class latch_tree_root(objects.StructType):
+    """Latched RB-trees implementation"""
+
+    @functools.cached_property
+    def _vmlinux(self):
+        return linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
+
+    @functools.lru_cache
+    def _get_type_cached(self, name):
+        return self._vmlinux.get_type(name)
+
+    def _get_lt_node_from_rb_node(
+        self, rb_node, index
+    ) -> Optional[interfaces.objects.ObjectInterface]:
+        """Gets the latch tree node from the RBTree node.
+        Based on __lt_from_rb()
+        """
+        # Unfortunately, we cannot use our LinuxUtilities.container_of() here, since the
+        # member is indexed by the 'index' variable:
+        #   ltn = container_of(node, struct latch_tree_node, node[idx])
+        pointer_size = self._get_type_cached("pointer").size
+        type_dec = self._get_type_cached("latch_tree_node")
+        member_offset = type_dec.relative_child_offset("node") + index * pointer_size
+        container_addr = rb_node.vol.offset - member_offset
+
+        return self._vmlinux.object(
+            object_type="latch_tree_node", offset=container_addr, absolute=True
+        )
+
+    def find(
+        self, key: int, comp_function: Callable
+    ) -> Optional[interfaces.objects.ObjectInterface]:
+        """Returns a pointer to the node matching key or None.
+
+        Based on latch_tree_find() and __lt_find()
+
+        Args:
+            key (int): Typically an address
+            comp_function: Callback comparison function to provide the order between the
+                search key and an element. It's works like the kernel's latch_tree_ops::comp
+                i.e.: comp_function(key, latch_tree_node)
+
+        Returns:
+            latch_tree_node: A pointer to the node matching key or None.
+        """
+        # latch_tree_root >= 4.2 ade3f510f93a5613b672febe88eff8ea7f1c63b7
+
+        # Use the lowest sequence bit as an index for picking which data copy to read
+        if self.seq.has_member("seqcount"):
+            # kernels >= 5.10 0c9794c8b6781eb7dad8e19b78c5d4557790597a
+            sequence = self.seq.seqcount.sequence
+        elif self.seq.has_member("sequence"):
+            # 4.2 <= kernel < 5.10
+            sequence = self.seq.sequence
+        else:
+            raise AttributeError("Unsupported sequence type implementation")
+
+        idx = sequence & 1
+
+        rb_node_ptr = self.tree[idx].rb_node
+        while rb_node_ptr and rb_node_ptr.is_readable():
+            rb_node = rb_node_ptr.dereference()
+            lt_node = self._get_lt_node_from_rb_node(rb_node, idx)
+            c = comp_function(key, lt_node)
+            if c < 0:
+                rb_node_ptr = rb_node.rb_left
+            elif c > 0:
+                rb_node_ptr = rb_node.rb_right
+            else:
+                return lt_node
+
+        return None
+
+
+class kernel_symbol(objects.StructType):
+
+    def _offset_to_ptr(self, off) -> int:
+        layer = self._context.layers[self.vol.layer_name]
+        long_mask = (1 << layer.bits_per_register) - 1
+        return (self.vol.offset + off) & long_mask
+
+    def get_name(self) -> str:
+        if self.has_member("name_offset"):
+            # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
+            # See 7290d58095712a89f845e1bca05334796dd49ed2
+            name_offset = self._offset_to_ptr(self.name_offset)
+        elif self.has_member("name"):
+            # kernel < 4.19 or CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=n
+            name_offset = self.member("name")
+        else:
+            raise AttributeError("Unsupported kernel_symbol type implementation")
+
+        layer = self._context.layers[self.vol.layer_name]
+        name_bytes = layer.read(name_offset, linux_constants.KSYM_NAME_LEN)
+
+        idx = name_bytes.find(b"\x00")
+        if idx != -1:
+            name_bytes = name_bytes[:idx]
+
+        return name_bytes.decode("utf-8", errors="ignore")
+
+    def get_value(self) -> int:
+        if self.has_member("value_offset"):
+            # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
+            # See 7290d58095712a89f845e1bca05334796dd49ed2
+            return self._offset_to_ptr(self.value_offset)
+        elif self.has_member("value"):
+            # kernel < 4.19 or CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=n
+            return self.member("value")
+
+        raise AttributeError("Unsupported kernel_symbol type implementation")
+
+    def get_namespace(self) -> str:
+        if self.has_member("namespace_offset"):
+            # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
+            # See 7290d58095712a89f845e1bca05334796dd49ed2
+            namespace_offset = self._offset_to_ptr(self.namespace_offset)
+        elif self.has_member("namespace"):
+            # kernel < 4.19 or CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=n
+            namespace_offset = self.member("namespace")
+        else:
+            raise AttributeError("Unsupported kernel_symbol type implementation")
+
+        layer = self._context.layers[self.vol.layer_name]
+        namespace_bytes = layer.read(namespace_offset, linux_constants.KSYM_NAME_LEN)
+
+        idx = namespace_bytes.find(b"\x00")
+        if idx != -1:
+            namespace_bytes = namespace_bytes[:idx]
+
+        return namespace_bytes.decode("utf-8", errors="ignore")
