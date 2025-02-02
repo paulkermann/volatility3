@@ -23,7 +23,7 @@ class PsScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Scans for processes present in a particular windows memory image."""
 
     _required_framework_version = (2, 3, 1)
-    _version = (1, 1, 0)
+    _version = (1, 1, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -194,9 +194,12 @@ class PsScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # If it's WinXP->8.1 we have now a physical process address.
         # We'll use the first thread to bounce back to the virtual process
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
-
         tleoffset = ntkrnlmp.get_type("_ETHREAD").relative_child_offset(
             "ThreadListEntry"
         )

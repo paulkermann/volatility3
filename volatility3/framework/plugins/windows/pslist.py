@@ -22,7 +22,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Lists the processes present in a particular windows memory image."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
     PHYSICAL_DEFAULT = False
 
     @classmethod
@@ -226,7 +226,11 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         """
 
         # We only use the object factory to demonstrate how to use one
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         ps_aph_offset = ntkrnlmp.get_symbol("PsActiveProcessHead").address

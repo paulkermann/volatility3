@@ -15,7 +15,7 @@ class HiveScan(interfaces.plugins.PluginInterface):
     """Scans for registry hives present in a particular windows memory image."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (2, 0, 0)
 
     @classmethod
     def get_requirements(cls):
@@ -35,10 +35,7 @@ class HiveScan(interfaces.plugins.PluginInterface):
 
     @classmethod
     def scan_hives(
-        cls,
-        context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        cls, context: interfaces.context.ContextInterface, kernel_name: str
     ) -> Iterable[interfaces.objects.ObjectInterface]:
         """Scans for hives using the poolscanner module and constraints or bigpools module with tag.
 
@@ -51,17 +48,21 @@ class HiveScan(interfaces.plugins.PluginInterface):
             A list of Hive objects as found from the `layer_name` layer based on Hive pool signatures
         """
 
-        is_64bit = symbols.symbol_table_is_64bit(context, symbol_table)
+        kernel = context.modules[kernel_name]
+
+        is_64bit = symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
         is_windows_8_1_or_later = versions.is_windows_8_1_or_later(
-            context=context, symbol_table=symbol_table
+            context=context, symbol_table=kernel.symbol_table_name
         )
 
         if is_windows_8_1_or_later and is_64bit:
-            kvo = context.layers[layer_name].config["kernel_virtual_offset"]
-            ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
+            ntkrnlmp = kernel
 
             for pool in bigpools.BigPools.list_big_pools(
-                context, layer_name=layer_name, symbol_table=symbol_table, tags=["CM10"]
+                context,
+                layer_name=kernel.layer_name,
+                symbol_table=kernel.symbol_table_name,
+                tags=["CM10"],
             ):
                 cmhive = ntkrnlmp.object(
                     object_type="_CMHIVE", offset=pool.Va, absolute=True
@@ -70,21 +71,17 @@ class HiveScan(interfaces.plugins.PluginInterface):
 
         else:
             constraints = poolscanner.PoolScanner.builtin_constraints(
-                symbol_table, [b"CM10"]
+                kernel.symbol_table_name, [b"CM10"]
             )
 
             for result in poolscanner.PoolScanner.generate_pool_scan(
-                context, layer_name, symbol_table, constraints
+                context, kernel.layer_name, kernel.symbol_table_name, constraints
             ):
                 _constraint, mem_object, _header = result
                 yield mem_object
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
-        for hive in self.scan_hives(
-            self.context, kernel.layer_name, kernel.symbol_table_name
-        ):
+        for hive in self.scan_hives(self.context, self.config["kernel"]):
             yield (0, (format_hints.Hex(hive.vol.offset),))
 
     def run(self):

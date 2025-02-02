@@ -21,7 +21,7 @@ class BigPools(interfaces.plugins.PluginInterface):
     """List big page pools."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 1, 0)
+    _version = (1, 1, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -66,7 +66,11 @@ class BigPools(interfaces.plugins.PluginInterface):
         Yields:
             A big page pool object
         """
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         big_page_table_offset = ntkrnlmp.get_symbol("PoolBigPageTable").address

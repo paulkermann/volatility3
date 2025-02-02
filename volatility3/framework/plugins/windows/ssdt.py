@@ -19,7 +19,7 @@ class SSDT(plugins.PluginInterface):
     """Lists the system call table."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -89,9 +89,8 @@ class SSDT(plugins.PluginInterface):
             self.context, layer_name, kernel.symbol_table_name
         )
 
-        kvo = self.context.layers[layer_name].config["kernel_virtual_offset"]
         ntkrnlmp = self.context.module(
-            kernel.symbol_table_name, layer_name=layer_name, offset=kvo
+            kernel.symbol_table_name, layer_name=kernel.offset, offset=kvo
         )
 
         # this is just one way to enumerate the native (NT) service table.

@@ -18,7 +18,7 @@ class Modules(interfaces.plugins.PluginInterface):
     """Lists the loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -247,7 +247,11 @@ class Modules(interfaces.plugins.PluginInterface):
             A list of Modules as retrieved from PsLoadedModuleList
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         try:

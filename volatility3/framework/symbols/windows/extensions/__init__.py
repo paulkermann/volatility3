@@ -838,9 +838,14 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
                     return renderers.NotApplicableValue()
 
                 symbol_table_name = self.get_symbol_table_name()
-                kvo = self._context.layers[self.vol.native_layer_name].config[
-                    "kernel_virtual_offset"
-                ]
+                kvo = self._context.layers[self.vol.native_layer_name].config.get(
+                    "kernel_virtual_offset", None
+                )
+                if not kvo:
+                    raise ValueError(
+                        "Intel layer does not have an associatd kernel virtual offset, failing"
+                    )
+
                 ntkrnlmp = self._context.module(
                     symbol_table_name,
                     layer_name=self.vol.native_layer_name,
@@ -1030,7 +1035,13 @@ class TOKEN(objects.StructType):
 
         if self.UserAndGroupCount < 0xFFFF:
             layer_name = self.vol.layer_name
-            kvo = self._context.layers[layer_name].config["kernel_virtual_offset"]
+            kvo = self._context.layers[layer_name].config.get(
+                "kernel_virtual_offset", None
+            )
+            if not kvo:
+                raise ValueError(
+                    "Intel layer does not have an associatd kernel virtual offset, failing"
+                )
             symbol_table = self.get_symbol_table_name()
             ntkrnlmp = self._context.module(
                 symbol_table, layer_name=layer_name, offset=kvo
@@ -1132,9 +1143,13 @@ class KTIMER(objects.StructType):
     def get_dpc(self):
         """Return Dpc, and if Windows 7 or later, decode it"""
         symbol_table_name = self.get_symbol_table_name()
-        kvo = self._context.layers[self.vol.native_layer_name].config[
-            "kernel_virtual_offset"
-        ]
+        kvo = self._context.layers[self.vol.native_layer_name].config.get(
+            "kernel_virtual_offset", None
+        )
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = self._context.module(
             symbol_table_name,
             layer_name=self.vol.native_layer_name,

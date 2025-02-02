@@ -28,7 +28,7 @@ class Callbacks(interfaces.plugins.PluginInterface):
     """Lists kernel callbacks and notification routines."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -361,7 +361,11 @@ class Callbacks(interfaces.plugins.PluginInterface):
             A name, location and optional detail string
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         is_vista_or_later = versions.is_vista_or_later(
@@ -418,7 +422,11 @@ class Callbacks(interfaces.plugins.PluginInterface):
         Lists all registry callbacks from the old format via the CmpCallBackVector.
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
         full_type_name = (
             callback_table_name + constants.BANG + "_EX_CALLBACK_ROUTINE_BLOCK"
@@ -465,7 +473,11 @@ class Callbacks(interfaces.plugins.PluginInterface):
         Lists all registry callbacks via the CallbackListHead.
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
         full_type_name = callback_table_name + constants.BANG + "_CM_CALLBACK_ENTRY"
 
@@ -506,7 +518,11 @@ class Callbacks(interfaces.plugins.PluginInterface):
             A name, location and optional detail string
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         if ntkrnlmp.has_symbol("CmpCallBackVector") and ntkrnlmp.has_symbol(
@@ -562,7 +578,11 @@ class Callbacks(interfaces.plugins.PluginInterface):
             A name, location and optional detail string
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         try:
@@ -626,7 +646,11 @@ class Callbacks(interfaces.plugins.PluginInterface):
             A name, location and optional detail string
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associatd kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         try:
