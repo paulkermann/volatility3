@@ -176,7 +176,7 @@ class module(generic.GenericIntelProcess):
         """Get the name of the module as a string"""
         return utility.array_to_string(self.name)
 
-    def _get_sect_count(self, grp) -> int:
+    def _get_sect_count(self, grp: interfaces.objects.ObjectInterface) -> int:
         """Try to determine the number of valid sections"""
         symbol_table_name = self.get_symbol_table_name()
         arr = self._context.object(
