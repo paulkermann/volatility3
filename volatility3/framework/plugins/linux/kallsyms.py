@@ -94,17 +94,17 @@ class Kallsyms(plugins.PluginInterface):
         if not any(symbols_flags):
             include_core = include_modules = include_ftrace = include_bpf = True
 
-        symbol_geneators = []
+        symbol_generators = []
         if include_core:
-            symbol_geneators.append(kas.get_core_symbols())
+            symbol_generators.append(kas.get_core_symbols())
         if include_modules:
-            symbol_geneators.append(kas.get_modules_symbols())
+            symbol_generators.append(kas.get_modules_symbols())
         if include_ftrace:
-            symbol_geneators.append(kas.get_ftrace_symbols())
+            symbol_generators.append(kas.get_ftrace_symbols())
         if include_bpf:
-            symbol_geneators.append(kas.get_bpf_symbols())
+            symbol_generators.append(kas.get_bpf_symbols())
 
-        for symbols_generator in symbol_geneators:
+        for symbols_generator in symbol_generators:
             for kassymbol in symbols_generator:
                 # Symbol sizes are calculated using the address of the next non-aliased
                 # symbol or the end of the kernel text area _end/_etext. However, some kernel
