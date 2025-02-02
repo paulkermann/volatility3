@@ -848,7 +848,7 @@ def test_linux_kallsyms(image, volatility, python):
         image,
         volatility,
         python,
-        pluginargs=["--only-modules"],
+        pluginargs=["--modules"],
     )
     # linux-sample-1.bin has no hidden modules.
     # This validates that plugin requirements are met and exceptions are not raised.
