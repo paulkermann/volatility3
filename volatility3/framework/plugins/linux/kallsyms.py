@@ -82,7 +82,7 @@ class Kallsyms(plugins.PluginInterface):
         kas = kallsyms.Kallsyms(
             context=self.context,
             layer_name=vmlinux.layer_name,
-            module_name=self.config["kernel"],
+            module_name=module_name,
         )
 
         include_core = self.config.get("core", False)
