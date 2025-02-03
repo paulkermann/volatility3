@@ -243,7 +243,12 @@ class Handles(interfaces.plugins.PluginInterface):
         layer_object = self.context.layers[virtual]
         masked_offset = offset & layer_object.maximum_address
 
-        for entry in table:
+        for i in range(len(table)):
+            try:
+                entry = table[i]
+            except exceptions.InvalidAddressException:
+                vollog.debug(f"Failed to get handle table entry at index {i}")
+                continue
             # This triggered a backtrace in many testing samples
             # in the level == 0 path
             # The code above this calls `is_valid` on the `offset`
