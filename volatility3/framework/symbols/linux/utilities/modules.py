@@ -35,13 +35,16 @@ class Modules(interfaces.configuration.VersionableInterface):
 
         Returns:
             The first memory module in which the address fits
+
+        Kernel documentation:
+            "within_module" and "within_module_mem_type" functions
         """
         matches = []
         seen_addresses = set()
         for module in modules:
             _, start, end = cls.mask_mods_list(context, layer_name, [module])[0]
             if (
-                start <= target_address <= end
+                start <= target_address < end
                 and module.vol.offset not in seen_addresses
             ):
                 matches.append(module)
