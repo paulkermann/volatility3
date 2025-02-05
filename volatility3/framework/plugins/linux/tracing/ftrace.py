@@ -6,7 +6,7 @@
 
 import logging
 from typing import Dict, List, Iterable, Optional
-from enum import IntFlag
+from enum import Enum
 from dataclasses import dataclass
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
@@ -21,7 +21,7 @@ vollog = logging.getLogger(__name__)
 
 
 # https://docs.python.org/3.13/library/enum.html#enum.IntFlag
-class FtraceOpsFlags(IntFlag):
+class FtraceOpsFlags(Enum):
     """Denote the state of an ftrace_ops struct.
     Based on https://elixir.bootlin.com/linux/v6.13-rc3/source/include/linux/ftrace.h#L255.
     """
@@ -221,11 +221,8 @@ if the "hidden_modules" key is present in known_modules.
                     for hooked_symbol in hooked_symbols
                 ]
             )
-            # Manipulate FtraceOpsFlags(ftrace_ops.flags) like so:
-            # "FtraceOpsFlags.FTRACE_OPS_FL_IPMODIFY|FTRACE_OPS_FL_ALLOC_TRAMP"
-            # -> "FTRACE_OPS_FL_IPMODIFY,FTRACE_OPS_FL_ALLOC_TRAMP"
-            formatted_ftrace_flags = (
-                str(FtraceOpsFlags(ftrace_ops.flags)).split(".")[-1].replace("|", ",")
+            formatted_ftrace_flags = ",".join(
+                [flag.name for flag in FtraceOpsFlags if flag.value & ftrace_ops.flags]
             )
             yield ParsedFtraceOps(
                 ftrace_ops.vol.offset,
