@@ -221,6 +221,12 @@ if the "hidden_modules" key is present in known_modules.
                     for hooked_symbol in hooked_symbols
                 ]
             )
+            # Manipulate FtraceOpsFlags(ftrace_ops.flags) like so:
+            # "FtraceOpsFlags.FTRACE_OPS_FL_IPMODIFY|FTRACE_OPS_FL_ALLOC_TRAMP"
+            # -> "FTRACE_OPS_FL_IPMODIFY,FTRACE_OPS_FL_ALLOC_TRAMP"
+            formatted_ftrace_flags = (
+                str(FtraceOpsFlags(ftrace_ops.flags)).split(".")[-1].replace("|", ",")
+            )
             yield ParsedFtraceOps(
                 ftrace_ops.vol.offset,
                 callback_symbol,
@@ -228,11 +234,7 @@ if the "hidden_modules" key is present in known_modules.
                 hooked_symbols,
                 module_name,
                 module_address,
-                # FtraceOpsFlags(ftrace_ops.flags).name is valid in > Python3.10, but
-                # returns None <= Python 3.10. We need to manipulate it like so to ensure compatibility:
-                # FtraceOpsFlags.FTRACE_OPS_FL_IPMODIFY|FTRACE_OPS_FL_ALLOC_TRAMP
-                # -> FTRACE_OPS_FL_IPMODIFY,FTRACE_OPS_FL_ALLOC_TRAMP
-                str(FtraceOpsFlags(ftrace_ops.flags)).split(".")[-1].replace("|", ","),
+                formatted_ftrace_flags,
             )
 
         return None
