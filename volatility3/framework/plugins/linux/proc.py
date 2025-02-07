@@ -246,7 +246,7 @@ class Maps(plugins.PluginInterface):
                         major,
                         minor,
                         inode_num,
-                        path,
+                        path or renderers.NotAvailableValue(),
                         file_output,
                     ),
                 )
