@@ -339,15 +339,15 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         symbol_table: str,
         task: interfaces.objects.ObjectInterface,
     ):
-        # task.files can be null
-        if not (task.files and task.files.is_readable()):
-            return None
+        try:
+            files = task.files
+            fd_table = files.get_fds()
+            if fd_table == 0:
+                return None
 
-        fd_table = task.files.get_fds()
-        if fd_table == 0:
+            max_fds = files.get_max_fds()
+        except exceptions.InvalidAddressException:
             return None
-
-        max_fds = task.files.get_max_fds()
 
         # corruption check
         if max_fds > 500000:
