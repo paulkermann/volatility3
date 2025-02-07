@@ -342,13 +342,12 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         try:
             files = task.files
             fd_table = files.get_fds()
+            if fd_table == 0:
+                return None
+
+            max_fds = files.get_max_fds()
         except exceptions.InvalidAddressException:
             return None
-
-        if fd_table == 0:
-            return None
-
-        max_fds = files.get_max_fds()
 
         # corruption check
         if max_fds > 500000:
