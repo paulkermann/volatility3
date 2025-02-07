@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
-from typing import List
+from typing import List, Tuple, Optional
 import logging
 from volatility3.framework import interfaces
 from volatility3.framework import renderers, symbols
@@ -39,7 +39,7 @@ class Malfind(interfaces.plugins.PluginInterface):
             ),
         ]
 
-    def _list_injections(self, task):
+    def _list_injections(self, task) -> Tuple[interfaces.objects.ObjectInterface, Optional[str], bytes]:
         """Generate memory regions for a process that may contain injected
         code."""
 
