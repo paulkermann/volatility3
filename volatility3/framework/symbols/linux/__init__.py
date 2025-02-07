@@ -276,7 +276,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
                         ns_ops = ns_common.ops
 
                     pre_name = utility.pointer_to_string(ns_ops.name, 255)
-                except IndexError:
+                except (exceptions.SymbolError, IndexError):
                     pre_name = "<unsupported ns_dname implementation>"
             else:
                 pre_name = f"<unsupported d_op symbol> {sym}"
