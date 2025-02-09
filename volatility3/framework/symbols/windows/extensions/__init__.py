@@ -843,7 +843,7 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
                 )
                 if not kvo:
                     raise ValueError(
-                        "Intel layer does not have an associatd kernel virtual offset, failing"
+                        "Intel layer does not have an associated kernel virtual offset, failing"
                     )
 
                 ntkrnlmp = self._context.module(
@@ -1040,7 +1040,7 @@ class TOKEN(objects.StructType):
             )
             if not kvo:
                 raise ValueError(
-                    "Intel layer does not have an associatd kernel virtual offset, failing"
+                    "Intel layer does not have an associated kernel virtual offset, failing"
                 )
             symbol_table = self.get_symbol_table_name()
             ntkrnlmp = self._context.module(
@@ -1148,7 +1148,7 @@ class KTIMER(objects.StructType):
         )
         if not kvo:
             raise ValueError(
-                "Intel layer does not have an associatd kernel virtual offset, failing"
+                "Intel layer does not have an associated kernel virtual offset, failing"
             )
         ntkrnlmp = self._context.module(
             symbol_table_name,

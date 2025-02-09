@@ -638,12 +638,12 @@ class ModuleRequirement(
         self.add_requirement(
             TranslationLayerRequirement(name="layer_name", architectures=architectures)
         )
+        self.add_requirement(SymbolTableRequirement(name="symbol_table_name"))
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
             IntRequirement(name="offset"),
-            SymbolTableRequirement(name="symbol_table_name"),
         ]
 
     def unsatisfied(

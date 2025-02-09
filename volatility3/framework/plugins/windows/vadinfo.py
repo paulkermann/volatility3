@@ -102,7 +102,7 @@ class VadInfo(interfaces.plugins.PluginInterface):
         kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
         if not kvo:
             raise ValueError(
-                "Intel layer does not have an associatd kernel virtual offset, failing"
+                "Intel layer does not have an associated kernel virtual offset, failing"
             )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
         addr = ntkrnlmp.get_symbol("MmProtectToValue").address
