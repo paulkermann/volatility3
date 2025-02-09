@@ -212,10 +212,10 @@ if the "hidden_modules" key is present in known_modules.
 
         tracepoints = []
         tracepoints_start = kernel.object_from_symbol("__start___tracepoints_ptrs")
-        tracepoints_end = kernel.object_from_symbol("__stop___tracepoints_ptrs")
-        tracepoints_array_size = (
-            tracepoints_end.vol.offset - tracepoints_start.vol.offset
+        tracepoints_end = kernel.get_absolute_symbol_address(
+            "__stop___tracepoints_ptrs"
         )
+        tracepoints_array_size = tracepoints_end - tracepoints_start.vol.offset
         # kernel's tracepoint_ptr_deref() and tracepoint_ptr_t
         # adjust depending on the use of PC-relative addressing
         # or not.
