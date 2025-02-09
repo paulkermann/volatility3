@@ -6,8 +6,9 @@ import math
 import logging
 import datetime
 from dataclasses import dataclass, astuple
-from typing import List, Set, Type, Iterable, Tuple
+from typing import IO, List, Set, Type, Iterable, Tuple
 
+from volatility3.framework.constants import architectures
 from volatility3.framework import renderers, interfaces, exceptions
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.interfaces import plugins
@@ -37,6 +38,11 @@ class InodeUser:
     modification_time: str
     change_time: str
     path: str
+    inode_size: int
+
+    @classmethod
+    def format_symlink(cls, symlink_source: str, symlink_dest: str) -> str:
+        return f"{symlink_source} -> {symlink_dest}"
 
 
 @dataclass
@@ -80,6 +86,7 @@ class InodeInternal:
         access_time_dt = self.inode.get_access_time()
         modification_time_dt = self.inode.get_modification_time()
         change_time_dt = self.inode.get_change_time()
+        inode_size = int(self.inode.i_size)
 
         inode_user = InodeUser(
             superblock_addr=superblock_addr,
@@ -95,6 +102,7 @@ class InodeInternal:
             modification_time=modification_time_dt,
             change_time=change_time_dt,
             path=self.path,
+            inode_size=inode_size,
         )
         return inode_user
 
@@ -104,7 +112,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (1, 0, 3)
+    _version = (1, 1, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -112,7 +120,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=architectures.LINUX_ARCHS,
             ),
             requirements.PluginRequirement(
                 name="mountinfo", plugin=mountinfo.MountInfo, version=(1, 2, 0)
@@ -154,10 +162,10 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             and inode.i_link
             and inode.i_link.is_readable()
         ):
-            i_link_str = inode.i_link.dereference().cast(
+            symlink_dest = inode.i_link.dereference().cast(
                 "string", max_length=255, encoding="utf-8", errors="replace"
             )
-            symlink_path = f"{symlink_path} -> {i_link_str}"
+            symlink_path = InodeUser.format_symlink(symlink_path, symlink_dest)
 
         return symlink_path
 
@@ -218,12 +226,14 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
         cls,
         context: interfaces.context.ContextInterface,
         vmlinux_module_name: str,
+        follow_symlinks: bool = True,
     ) -> Iterable[InodeInternal]:
         """Retrieves the inodes from the superblocks
 
         Args:
             context: The context that the plugin will operate within
             vmlinux_module_name: The name of the kernel module on which to operate
+            follow_symlinks: Whether to follow symlinks or not
 
         Yields:
             An InodeInternal object
@@ -303,7 +313,8 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
                     continue
                 seen_inodes.add(file_inode_ptr)
 
-                file_path = cls._follow_symlink(file_inode_ptr, file_path)
+                if follow_symlinks:
+                    file_path = cls._follow_symlink(file_inode_ptr, file_path)
                 inode_in = InodeInternal(
                     superblock=superblock,
                     mountpoint=mountpoint,
@@ -393,6 +404,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             ("ModificationTime", datetime.datetime),
             ("ChangeTime", datetime.datetime),
             ("FilePath", str),
+            ("InodeSize", int),
         ]
 
         return renderers.TreeGrid(
@@ -405,7 +417,7 @@ class InodePages(plugins.PluginInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (2, 0, 2)
+    _version = (3, 0, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -413,7 +425,7 @@ class InodePages(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=architectures.LINUX_ARCHS,
             ),
             requirements.PluginRequirement(
                 name="files", plugin=Files, version=(1, 0, 0)
@@ -439,62 +451,82 @@ class InodePages(plugins.PluginInterface):
     @classmethod
     def write_inode_content_to_file(
         cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
         inode: interfaces.objects.ObjectInterface,
         filename: str,
         open_method: Type[interfaces.plugins.FileHandlerInterface],
-        vmlinux_layer: interfaces.layers.TranslationLayerInterface,
     ) -> None:
         """Extracts the inode's contents from the page cache and saves them to a file
 
         Args:
+            context: The context on which to operate
+            layer_name: The name of the layer on which to operate
             inode: The inode to dump
             filename: Filename for writing the inode content
             open_method: class for constructing output files
-            vmlinux_layer: The kernel layer to obtain the page size
+        """
+        try:
+            with open_method(filename) as file_obj:
+                cls.write_inode_content_to_stream(context, layer_name, inode, file_obj)
+        except OSError as e:
+            vollog.error("Unable to write to file (%s): %s", filename, e)
+
+    @classmethod
+    def write_inode_content_to_stream(
+        cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
+        inode: interfaces.objects.ObjectInterface,
+        stream: IO,
+    ) -> None:
+        """Extracts the inode's contents from the page cache and saves them to a stream
+
+        Args:
+            context: The context on which to operate
+            layer_name: The name of the layer on which to operate
+            inode: The inode to dump
+            stream: An IO stream to write to, typically FileHandlerInterface or BytesIO
         """
         if not inode.is_reg:
             vollog.error("The inode is not a regular file")
             return None
 
-        # By using truncate/seek, provided the filesystem supports it, a sparse file will be
+        layer = context.layers[layer_name]
+        # By using truncate/seek, provided the filesystem supports it, and the
+        # stream is a File interface, a sparse file will be
         # created, saving both disk space and I/O time.
         # Additionally, using the page index will guarantee that each page is written at the
         # appropriate file position.
         inode_size = inode.i_size
         try:
-            file_initialized = False
-            with open_method(filename) as file_obj:
-                for page_idx, page_content in inode.get_contents():
-                    current_fp = page_idx * vmlinux_layer.page_size
-                    max_length = inode_size - current_fp
-                    page_bytes_len = min(max_length, len(page_content))
-                    if (
-                        current_fp >= inode_size
-                        or current_fp + page_bytes_len > inode_size
-                    ):
-                        vollog.error(
-                            "Page out of file bounds: inode 0x%x, inode size %d, page index %d",
-                            inode.vol.offset,
-                            inode_size,
-                            page_idx,
-                        )
-                        continue
-                    page_bytes = page_content[:page_bytes_len]
+            stream_initialized = False
+            for page_idx, page_content in inode.get_contents():
+                current_fp = page_idx * layer.page_size
+                max_length = inode_size - current_fp
+                page_bytes_len = min(max_length, len(page_content))
+                if current_fp >= inode_size or current_fp + page_bytes_len > inode_size:
+                    vollog.error(
+                        "Page out of file bounds: inode 0x%x, inode size %d, page index %d",
+                        inode.vol.offset,
+                        inode_size,
+                        page_idx,
+                    )
+                    continue
+                page_bytes = page_content[:page_bytes_len]
 
-                    if not file_initialized:
-                        # Lazy initialization to avoid truncating the file until we are
-                        # certain there is something to write
-                        file_obj.truncate(inode_size)
-                        file_initialized = True
+                if not stream_initialized:
+                    # Lazy initialization to avoid truncating the stream until we are
+                    # certain there is something to write
+                    stream.truncate(inode_size)
+                    stream_initialized = True
 
-                    file_obj.seek(current_fp)
-                    file_obj.write(page_bytes)
+                stream.seek(current_fp)
+                stream.write(page_bytes)
         except exceptions.LinuxPageCacheException:
             vollog.error(
                 f"Error dumping cached pages for inode at {inode.vol.offset:#x}"
             )
-        except OSError as e:
-            vollog.error("Unable to write to file (%s): %s", filename, e)
 
     def _generate_inode_fields(
         self,
@@ -575,7 +607,7 @@ class InodePages(plugins.PluginInterface):
             filename = open_method.sanitize_filename(f"inode_0x{inode_address:x}.dmp")
             vollog.info("[*] Writing inode at 0x%x to '%s'", inode_address, filename)
             self.write_inode_content_to_file(
-                inode, filename, open_method, vmlinux_layer
+                self.context, vmlinux_layer.name, inode, filename, open_method
             )
         else:
             yield from self._generate_inode_fields(inode, vmlinux_layer)
