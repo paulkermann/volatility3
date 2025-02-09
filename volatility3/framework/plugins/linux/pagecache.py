@@ -226,12 +226,14 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
         cls,
         context: interfaces.context.ContextInterface,
         vmlinux_module_name: str,
+        follow_symlinks: bool = True,
     ) -> Iterable[InodeInternal]:
         """Retrieves the inodes from the superblocks
 
         Args:
             context: The context that the plugin will operate within
             vmlinux_module_name: The name of the kernel module on which to operate
+            follow_symlinks: Whether to follow symlinks or not
 
         Yields:
             An InodeInternal object
@@ -311,7 +313,8 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
                     continue
                 seen_inodes.add(file_inode_ptr)
 
-                file_path = cls._follow_symlink(file_inode_ptr, file_path)
+                if follow_symlinks:
+                    file_path = cls._follow_symlink(file_inode_ptr, file_path)
                 inode_in = InodeInternal(
                     superblock=superblock,
                     mountpoint=mountpoint,
