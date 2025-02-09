@@ -22,7 +22,7 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
     """Lists the unloaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -88,7 +88,11 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
             A list of Unloaded Modules as retrieved from MmUnloadedDrivers
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associated kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
         unloadedmodules_offset = ntkrnlmp.get_symbol("MmUnloadedDrivers").address
         unloadedmodules = ntkrnlmp.object(

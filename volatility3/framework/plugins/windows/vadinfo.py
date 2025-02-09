@@ -34,7 +34,7 @@ class VadInfo(interfaces.plugins.PluginInterface):
     """Lists process memory ranges."""
 
     _required_framework_version = (2, 4, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
     MAXSIZE_DEFAULT = 1024 * 1024 * 1024  # 1 Gb
 
     def __init__(self, *args, **kwargs):
@@ -99,7 +99,11 @@ class VadInfo(interfaces.plugins.PluginInterface):
             symbol_table: The name of the table containing the kernel symbols
         """
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associated kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
         addr = ntkrnlmp.get_symbol("MmProtectToValue").address
         values = ntkrnlmp.object(

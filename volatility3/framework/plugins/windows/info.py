@@ -17,7 +17,7 @@ class Info(plugins.PluginInterface):
     """Show OS & kernel details of the memory sample being analyzed."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -68,7 +68,9 @@ class Info(plugins.PluginInterface):
         if not isinstance(virtual_layer, layers.intel.Intel):
             raise TypeError("Virtual Layer is not an intel layer")
 
-        kvo = virtual_layer.config["kernel_virtual_offset"]
+        kvo = virtual_layer.config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError("Intel layer has no kernel virtual offset defined")
 
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
         return ntkrnlmp
@@ -166,7 +168,9 @@ class Info(plugins.PluginInterface):
         if not isinstance(virtual_layer, layers.intel.Intel):
             raise TypeError("Virtual Layer is not an intel layer")
 
-        kvo = virtual_layer.config["kernel_virtual_offset"]
+        kvo = virtual_layer.config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError("Intel layer has no kernel virtual offset defined")
 
         pe_table_name = intermed.IntermediateSymbolTable.create(
             context,

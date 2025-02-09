@@ -41,7 +41,7 @@ class HiveGenerator:
 class HiveList(interfaces.plugins.PluginInterface):
     """Lists the registry hives present in a particular memory image."""
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
     _required_framework_version = (2, 0, 0)
 
     @classmethod
@@ -59,7 +59,7 @@ class HiveList(interfaces.plugins.PluginInterface):
                 default=None,
             ),
             requirements.PluginRequirement(
-                name="hivescan", plugin=hivescan.HiveScan, version=(1, 0, 0)
+                name="hivescan", plugin=hivescan.HiveScan, version=(2, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="dump",
@@ -215,7 +215,11 @@ class HiveList(interfaces.plugins.PluginInterface):
         """
 
         # We only use the object factory to demonstrate how to use one
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associated kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         list_head = ntkrnlmp.get_symbol("CmpHiveListHead").address
@@ -278,9 +282,7 @@ class HiveList(interfaces.plugins.PluginInterface):
                     f"Hivelist failed traversing backwards at {hex(backward_invalid)}, a different "
                     "location from forwards, revert to scanning"
                 )
-                for hive in hivescan.HiveScan.scan_hives(
-                    context, layer_name, symbol_table
-                ):
+                for hive in hivescan.HiveScan.scan_hives(context, ntkrnlmp.name):
                     try:
                         if hive.HiveList.Flink:
                             start_hive_offset = hive.HiveList.Flink - reloff
