@@ -6,8 +6,9 @@ import math
 import logging
 import datetime
 from dataclasses import dataclass, astuple
-from typing import List, Set, Type, Iterable, Tuple
+from typing import IO, List, Set, Type, Iterable, Tuple
 
+from volatility3.framework.constants import architectures
 from volatility3.framework import renderers, interfaces, exceptions
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.interfaces import plugins
@@ -112,7 +113,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=architectures.LINUX_ARCHS,
             ),
             requirements.PluginRequirement(
                 name="mountinfo", plugin=mountinfo.MountInfo, version=(1, 2, 0)
@@ -413,7 +414,7 @@ class InodePages(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=architectures.LINUX_ARCHS,
             ),
             requirements.PluginRequirement(
                 name="files", plugin=Files, version=(1, 0, 0)
