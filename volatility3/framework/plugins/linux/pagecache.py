@@ -162,10 +162,10 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             and inode.i_link
             and inode.i_link.is_readable()
         ):
-            i_link_str = inode.i_link.dereference().cast(
+            symlink_dest = inode.i_link.dereference().cast(
                 "string", max_length=255, encoding="utf-8", errors="replace"
             )
-            symlink_path = f"{symlink_path} -> {i_link_str}"
+            symlink_path = InodeUser.format_symlink(symlink_path, symlink_dest)
 
         return symlink_path
 
