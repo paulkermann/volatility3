@@ -451,14 +451,17 @@ class InodePages(plugins.PluginInterface):
     @classmethod
     def write_inode_content_to_file(
         cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
         inode: interfaces.objects.ObjectInterface,
         filename: str,
         open_method: Type[interfaces.plugins.FileHandlerInterface],
-        vmlinux_layer: interfaces.layers.TranslationLayerInterface,
     ) -> None:
         """Extracts the inode's contents from the page cache and saves them to a file
 
         Args:
+            context: The context on which to operate
+            layer_name: The name of the layer on which to operate
             inode: The inode to dump
             filename: Filename for writing the inode content
             open_method: class for constructing output files
@@ -587,7 +590,7 @@ class InodePages(plugins.PluginInterface):
             filename = open_method.sanitize_filename(f"inode_0x{inode_address:x}.dmp")
             vollog.info("[*] Writing inode at 0x%x to '%s'", inode_address, filename)
             self.write_inode_content_to_file(
-                inode, filename, open_method, vmlinux_layer
+                self.context, vmlinux_layer.name, inode, filename, open_method
             )
         else:
             yield from self._generate_inode_fields(inode, vmlinux_layer)
