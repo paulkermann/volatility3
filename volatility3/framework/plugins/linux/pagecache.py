@@ -5,8 +5,11 @@
 import math
 import logging
 import datetime
+import time
+import tarfile
 from dataclasses import dataclass, astuple
 from typing import IO, List, Set, Type, Iterable, Tuple
+from io import BytesIO
 
 from volatility3.framework.constants import architectures
 from volatility3.framework import renderers, interfaces, exceptions
@@ -620,6 +623,214 @@ class InodePages(plugins.PluginInterface):
             ("Index", int),
             ("DumpSafe", bool),
             ("Flags", str),
+        ]
+
+        return renderers.TreeGrid(
+            headers, Files.format_fields_with_headers(headers, self._generator())
+        )
+
+
+class RecoverFs(plugins.PluginInterface):
+    """Recovers the cached filesystem (directories, files, symlinks) into a compressed tarball.
+
+    Metadata aren't replicated to extracted objects and timestamps are set to the plugin run time. To prevent extraction errors related to long paths, please consider using https://github.com/mxmlnkn/ratarmount.
+    To mount:
+    "ratarmount recovered_fs.tar.gz ./recovered_fs_mounted/".
+    To unmount:
+    "umount ./recovered_fs_mounted/".
+    """
+
+    _version = (1, 0, 0)
+    _required_framework_version = (2, 0, 0)
+
+    @classmethod
+    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
+        return [
+            requirements.ModuleRequirement(
+                name="kernel",
+                description="Linux kernel",
+                architectures=architectures.LINUX_ARCHS,
+            ),
+            requirements.PluginRequirement(
+                name="files", plugin=Files, version=(1, 1, 0)
+            ),
+            requirements.PluginRequirement(
+                name="inodepages", plugin=InodePages, version=(3, 0, 0)
+            ),
+            requirements.ChoiceRequirement(
+                name="compression_format",
+                description="Compression format (default: gz)",
+                choices=["gz", "bz2", "xz"],
+                default="gz",
+                optional=True,
+            ),
+        ]
+
+    @classmethod
+    def _tar_add_reg_inode(
+        cls,
+        context: interfaces.context.ContextInterface,
+        layer_name: str,
+        tar: tarfile.TarFile,
+        reg_inode_in: InodeInternal,
+        mtime: float = None,
+    ) -> int:
+        """Extracts a REG inode content and writes it to a TarFile object.
+
+        Args:
+            context: The context on which to operate
+            layer_name: The name of the layer on which to operate
+            tar: The TarFile object to write to
+            reg_inode_in: The inode to extract content from
+            mtime: The modification time to set the TarInfo object to
+
+        Returns:
+            The number of extracted bytes
+        """
+        inode_content_buffer = BytesIO()
+        InodePages.write_inode_content_to_stream(
+            context, layer_name, reg_inode_in.inode, inode_content_buffer
+        )
+        inode_content_buffer.seek(0)
+        handle_buffer_size = inode_content_buffer.getbuffer().nbytes
+
+        tar_info = tarfile.TarInfo(reg_inode_in.path)
+        # The tarfile module only has read support for sparse files:
+        # https://docs.python.org/3.12/library/tarfile.html#tarfile.LNKTYPE:~:text=and%20longlink%20extensions%2C-,read%2Donly%20support,-for%20all%20variants
+        tar_info.type = tarfile.REGTYPE
+        tar_info.size = handle_buffer_size
+        tar_info.mode = 0o444
+        if mtime is not None:
+            tar_info.mtime = mtime
+        tar.addfile(tar_info, inode_content_buffer)
+
+        return handle_buffer_size
+
+    @classmethod
+    def _tar_add_dir_inode(
+        cls,
+        tar: tarfile.TarFile,
+        reg_dir_in: InodeInternal,
+        mtime: float = None,
+    ) -> None:
+        """Adds a directory path to a TarFile object, based on a DIR inode.
+
+        Args:
+            tar: The TarFile object to write to
+            reg_dir_in: The inode to base the new directory on
+            mtime: The modification time to set the TarInfo object to
+        """
+        tar_info = tarfile.TarInfo(reg_dir_in.path)
+        tar_info.type = tarfile.DIRTYPE
+        tar_info.mode = 0o755
+        if mtime is not None:
+            tar_info.mtime = mtime
+        tar.addfile(tar_info)
+
+    @classmethod
+    def _tar_add_lnk(
+        cls,
+        tar: tarfile.TarFile,
+        symlink_source: str,
+        symlink_dest: str,
+        mtime: float = None,
+    ) -> None:
+        """Adds a symlink to a TarFile object.
+
+        Args:
+            tar: The TarFile object to write to
+            symlink_source: The symlink source path
+            symlink_dest: The symlink target/destination
+            mtime: The modification time to set the TarInfo object to
+        """
+        # Patch symlinks pointing to absolute paths,
+        # to prevent referencing the host filesystem.
+        if symlink_dest.startswith("/"):
+            inode_depth = symlink_source.strip("/").count("/")
+            symlink_dest = "../" * inode_depth + symlink_dest.lstrip("/")
+
+        tar_info = tarfile.TarInfo(symlink_source)
+        tar_info.type = tarfile.SYMTYPE
+        tar_info.linkname = symlink_dest
+        tar_info.mode = 0o444
+        if mtime is not None:
+            tar_info.mtime = mtime
+        tar.addfile(tar_info)
+
+    def _generator(self):
+        vmlinux_module_name = self.config["kernel"]
+        vmlinux = self.context.modules[vmlinux_module_name]
+        vmlinux_layer = self.context.layers[vmlinux.layer_name]
+        tar_buffer = BytesIO()
+        tar = tarfile.open(
+            fileobj=tar_buffer,
+            mode=f"w:{self.config['compression_format']}",
+        )
+        # Set a unique timestamp for all extracted files
+        mtime = time.time()
+
+        inodes_iter = Files.get_inodes(
+            context=self.context,
+            vmlinux_module_name=vmlinux_module_name,
+            follow_symlinks=False,
+        )
+        visited_paths = set()
+        for inode_in in inodes_iter:
+            if inode_in.path in visited_paths:
+                continue
+            visited_paths.add(inode_in.path)
+            extracted_file_size = renderers.NotApplicableValue()
+
+            # Inodes parent directory is yielded first, which
+            # ensures that a file parent path will exist beforehand.
+            # tarfile will take care of creating it anyway.
+            if inode_in.inode.is_reg:
+                extracted_file_size = self._tar_add_reg_inode(
+                    self.context, vmlinux_layer.name, tar, inode_in, mtime
+                )
+            elif inode_in.inode.is_dir:
+                self._tar_add_dir_inode(tar, inode_in, mtime)
+            elif (
+                inode_in.inode.is_link
+                and inode_in.inode.has_member("i_link")
+                and inode_in.inode.i_link
+                and inode_in.inode.i_link.is_readable()
+            ):
+                symlink_dest = inode_in.inode.i_link.dereference().cast(
+                    "string", max_length=255, encoding="utf-8", errors="replace"
+                )
+                self._tar_add_lnk(tar, inode_in.path, symlink_dest, mtime)
+                # Set path to a user friendly representation before yielding
+                inode_in.path = InodeUser.format_symlink(inode_in.path, symlink_dest)
+            else:
+                continue
+
+            inode_out = inode_in.to_user(vmlinux_layer)
+            yield (0, astuple(inode_out) + (extracted_file_size,))
+
+        tar.close()
+        tar_buffer.seek(0)
+        output_filename = f"recovered_fs.tar.{self.config['compression_format']}"
+        with self.open(output_filename) as f:
+            f.write(tar_buffer.getvalue())
+
+    def run(self):
+        headers = [
+            ("SuperblockAddr", format_hints.Hex),
+            ("MountPoint", str),
+            ("Device", str),
+            ("InodeNum", int),
+            ("InodeAddr", format_hints.Hex),
+            ("FileType", str),
+            ("InodePages", int),
+            ("CachedPages", int),
+            ("FileMode", str),
+            ("AccessTime", datetime.datetime),
+            ("ModificationTime", datetime.datetime),
+            ("ChangeTime", datetime.datetime),
+            ("FilePath", str),
+            ("InodeSize", int),
+            ("Recovered FileSize", int),
         ]
 
         return renderers.TreeGrid(
