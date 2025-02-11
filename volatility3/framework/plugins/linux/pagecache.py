@@ -774,7 +774,7 @@ class RecoverFs(plugins.PluginInterface):
             follow_symlinks=False,
         )
 
-        # Prefix paths by the super_block uuid's to prevent overlaps.
+        # Prefix paths with the superblock UUID's to prevent overlaps.
         # Switch to device major and device minor for older kernels (< 2.6.39-rc1).
         uuid_as_prefix = vmlinux.get_type("super_block").has_member("s_uuid")
         if not uuid_as_prefix:
