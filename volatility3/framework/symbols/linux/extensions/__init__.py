@@ -1057,11 +1057,11 @@ class super_block(objects.StructType):
         SB_LAZYTIME: "lazytime",
     }
 
-    @property
+    @functools.cached_property
     def major(self) -> int:
         return self.s_dev >> self.MINORBITS
 
-    @property
+    @functools.cached_property
     def minor(self) -> int:
         return self.s_dev & ((1 << self.MINORBITS) - 1)
 
