@@ -67,24 +67,20 @@ class Envars(interfaces.plugins.PluginInterface):
             symbol_table=kernel.symbol_table_name,
             hive_offsets=None,
         ):
-            sys = False
-            ntuser = False
-
             ## The global variables
+            sys = None
             try:
-                key = hive.get_key(
+                sys = hive.get_key(
                     "CurrentControlSet\\Control\\Session Manager\\Environment"
                 )
-                sys = True
             except (KeyError, registry.RegistryFormatException):
                 with contextlib.suppress(KeyError, registry.RegistryFormatException):
-                    key = hive.get_key(
+                    sys = hive.get_key(
                         "ControlSet001\\Control\\Session Manager\\Environment"
                     )
-                    sys = True
             if sys:
                 with contextlib.suppress(KeyError, registry.RegistryFormatException):
-                    for node in key.get_values():
+                    for node in sys.get_values():
                         try:
                             value_node_name = node.get_name()
                             if value_node_name:
@@ -99,13 +95,13 @@ class Envars(interfaces.plugins.PluginInterface):
                             )
                             continue
 
+            ntuser = None
             ## The user-specific variables
             with contextlib.suppress(KeyError, registry.RegistryFormatException):
-                key = hive.get_key("Environment")
-                ntuser = True
+                ntuser = hive.get_key("Environment")
             if ntuser:
                 with contextlib.suppress(KeyError, registry.RegistryFormatException):
-                    for node in key.get_values():
+                    for node in ntuser.get_values():
                         try:
                             value_node_name = node.get_name()
                             if value_node_name:
