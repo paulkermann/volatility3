@@ -200,15 +200,13 @@ class Envars(interfaces.plugins.PluginInterface):
         return values
 
     def _generator(self, data):
-        silent_vars = []
-        if self.config.get("SILENT", None):
-            silent_vars = self._get_silent_vars()
+        silent_vars = self._get_silent_vars() if self.config.get("SILENT") else []
 
         for task in data:
             for var, val in task.environment_variables():
-                if self.config.get("silent", None):
-                    if var in silent_vars:
-                        continue
+                if var in silent_vars:
+                    continue
+
                 yield (
                     0,
                     (
