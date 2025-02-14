@@ -4,7 +4,7 @@
 import logging
 from typing import Generator, Iterable, List, Optional
 
-from volatility3.framework import constants, exceptions, interfaces, renderers
+from volatility3.framework import symbols, constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
@@ -18,7 +18,7 @@ class Modules(interfaces.plugins.PluginInterface):
     """Lists the loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 1)
+    _version = (2, 0, 2)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -126,6 +126,32 @@ class Modules(interfaces.plugins.PluginInterface):
                 FullDllName,
                 file_output,
             )
+
+    @classmethod
+    def get_kernel_space_start(cls, context, layer_name: str, module_name: str) -> int:
+        """
+        Returns the starting address of the kernel address space
+
+        This method allows plugins that analyze kernel data structures to quickly detect
+        smeared or otherwise invalid data as many pointers must point into the kernel or
+        access during runtime would crash the system
+        """
+        module = context.modules[module_name]
+
+        if symbols.symbol_table_is_64bit(context, module.symbol_table_name):
+            object_type = "unsigned long long"
+        else:
+            object_type = "unsigned long"
+
+        range_start_offset = module.get_symbol("MmSystemRangeStart").address
+
+        kernel_space_start = module.object(
+            object_type=object_type, offset=range_start_offset
+        )
+
+        layer = context.layers[layer_name]
+
+        return kernel_space_start & layer.address_mask
 
     @classmethod
     def get_session_layers(
