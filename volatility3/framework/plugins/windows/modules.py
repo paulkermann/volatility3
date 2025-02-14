@@ -18,7 +18,7 @@ class Modules(interfaces.plugins.PluginInterface):
     """Lists the loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 2)
+    _version = (2, 1, 0)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -128,7 +128,7 @@ class Modules(interfaces.plugins.PluginInterface):
             )
 
     @classmethod
-    def get_kernel_space_start(cls, context, layer_name: str, module_name: str) -> int:
+    def get_kernel_space_start(cls, context, module_name: str) -> int:
         """
         Returns the starting address of the kernel address space
 
@@ -149,7 +149,7 @@ class Modules(interfaces.plugins.PluginInterface):
             object_type=object_type, offset=range_start_offset
         )
 
-        layer = context.layers[layer_name]
+        layer = context.layers[module.layer_name]
 
         return kernel_space_start & layer.address_mask
 

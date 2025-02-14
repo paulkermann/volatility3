@@ -38,7 +38,7 @@ class Threads(thrdscan.ThrdScan):
                 name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="modules", plugin=modules.Modules, version=(2, 0, 2)
+                name="modules", plugin=modules.Modules, version=(2, 1, 0)
             ),
         ]
 
@@ -66,7 +66,7 @@ class Threads(thrdscan.ThrdScan):
         )
 
         kernel_space_start = modules.Modules.get_kernel_space_start(
-            context, layer_name, module_name
+            context, module_name
         )
 
         for thread in thrdscan.ThrdScan.scan_threads(context, module_name):
