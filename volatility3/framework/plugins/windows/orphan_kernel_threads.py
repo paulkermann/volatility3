@@ -5,9 +5,9 @@
 import logging
 from typing import List, Generator
 
-from volatility3.framework import interfaces, symbols
+from volatility3.framework import interfaces, exceptions
 from volatility3.framework.configuration import requirements
-from volatility3.plugins.windows import thrdscan, ssdt
+from volatility3.plugins.windows import thrdscan, ssdt, modules
 
 vollog = logging.getLogger(__name__)
 
@@ -37,6 +37,9 @@ class Threads(thrdscan.ThrdScan):
             requirements.PluginRequirement(
                 name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
             ),
+            requirements.PluginRequirement(
+                name="modules", plugin=modules.Modules, version=(2, 1, 0)
+            ),
         ]
 
     @classmethod
@@ -56,24 +59,27 @@ class Threads(thrdscan.ThrdScan):
         """
         module = context.modules[module_name]
         layer_name = module.layer_name
-        symbol_table = module.symbol_table_name
+        symbol_table_name = module.symbol_table_name
 
         collection = ssdt.SSDT.build_module_collection(
-            context, layer_name, symbol_table
+            context, layer_name, symbol_table_name
         )
 
-        # FIXME - use a proper constant once established
-        # used to filter out smeared pointers
-        if symbols.symbol_table_is_64bit(context, symbol_table):
-            kernel_start = 0xFFFFF80000000000
-        else:
-            kernel_start = 0x80000000
+        kernel_space_start = modules.Modules.get_kernel_space_start(
+            context, module_name
+        )
 
         for thread in thrdscan.ThrdScan.scan_threads(context, module_name):
-            # we don't want smeared or terminated threads
+            # We don't want smeared or terminated threads
+            # So we access the owning process (which could also be terminated or smeared)
+            # Plus check the start address holding page
             try:
                 proc = thread.owning_process()
-            except AttributeError:
+                pid = proc.UniqueProcessId
+                ppid = proc.InheritedFromUniqueProcessId
+
+                thread_start = thread.StartAddress
+            except (AttributeError, exceptions.InvalidAddressException):
                 continue
 
             # we only care about kernel threads, 4 = System
@@ -81,14 +87,19 @@ class Threads(thrdscan.ThrdScan):
             # such as bit fields and flags are not stable in Win10+
             # so we check if the thread is from the kernel itself or one its child
             # kernel processes (MemCompression, Regsitry, ...)
-            if proc.UniqueProcessId != 4 and proc.InheritedFromUniqueProcessId != 4:
+            if pid != 4 and ppid != 4:
                 continue
 
-            if thread.StartAddress < kernel_start:
+            # if the thread has an exit time or terminated (4) state, then skip it
+            if thread.ExitTime.QuadPart > 0 or thread.Tcb.State == 4:
+                continue
+
+            # threads pointing into userland, which is from smeared or terminated threads
+            if thread_start < kernel_space_start:
                 continue
 
             module_symbols = list(
-                collection.get_module_symbols_by_absolute_location(thread.StartAddress)
+                collection.get_module_symbols_by_absolute_location(thread_start)
             )
 
             # alert on threads that do not map to a module
