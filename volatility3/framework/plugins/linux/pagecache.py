@@ -635,7 +635,7 @@ class RecoverFs(plugins.PluginInterface):
     """Recovers the cached filesystem (directories, files, symlinks) into a compressed tarball.
 
     Details: level 0 directories are named after the UUID of the parent superblock; metadata aren't replicated to extracted objects; objects modification time is set to the plugin run time; absolute symlinks
-    are converted to relative symlinks to prevent referencing the analyst filesystem.
+    are converted to relative symlinks to prevent referencing the analyst's filesystem.
     Troubleshooting: to fix extraction errors related to long paths, please consider using https://github.com/mxmlnkn/ratarmount.
     """
 
@@ -793,7 +793,7 @@ class RecoverFs(plugins.PluginInterface):
 
             # Code is slightly duplicated here with the if-block below.
             # However this prevents unneeded tar manipulation if fifo
-            # or sock inodes comes through for example.
+            # or sock inodes come through for example.
             if not (
                 inode_in.inode.is_reg or inode_in.inode.is_dir or inode_in.inode.is_link
             ):
