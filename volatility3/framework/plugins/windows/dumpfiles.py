@@ -44,14 +44,16 @@ class DumpFiles(interfaces.plugins.PluginInterface):
                 description="Process ID to include (all other processes are excluded)",
                 optional=True,
             ),
-            requirements.IntRequirement(
+            requirements.ListRequirement(
                 name="virtaddr",
-                description="Dump a single _FILE_OBJECT at this virtual address",
+                element_type=int,
+                description="Dump the _FILE_OBJECTs at the given virtual address(es)",
                 optional=True,
             ),
-            requirements.IntRequirement(
+            requirements.ListRequirement(
                 name="physaddr",
-                description="Dump a single _FILE_OBJECT at this physical address",
+                element_type=int,
+                description="Dump a single _FILE_OBJECTs at the given physical address(es)",
                 optional=True,
             ),
             requirements.StringRequirement(
@@ -318,24 +320,26 @@ class DumpFiles(interfaces.plugins.PluginInterface):
                         )
 
         elif offsets:
+            virtual_layer_name = kernel.layer_name
+
+            # FIXME - change this after standard access to physical layer
+            physical_layer_name = self.context.layers[virtual_layer_name].config[
+                "memory_layer"
+            ]
+
             # Now process any offsets explicitly requested by the user.
             for offset, is_virtual in offsets:
                 try:
-                    layer_name = kernel.layer_name
-                    # switch to a memory layer if the user provided --physaddr instead of --virtaddr
-                    if not is_virtual:
-                        layer_name = self.context.layers[layer_name].config[
-                            "memory_layer"
-                        ]
-
                     file_obj = self.context.object(
                         kernel.symbol_table_name + constants.BANG + "_FILE_OBJECT",
-                        layer_name=layer_name,
-                        native_layer_name=kernel.layer_name,
+                        layer_name=(
+                            virtual_layer_name if is_virtual else physical_layer_name
+                        ),
+                        native_layer_name=virtual_layer_name,
                         offset=offset,
                     )
                     for result in self.process_file_object(
-                        self.context, kernel.layer_name, self.open, file_obj
+                        self.context, virtual_layer_name, self.open, file_obj
                     ):
                         yield (0, result)
                 except exceptions.InvalidAddressException:
@@ -355,11 +359,15 @@ class DumpFiles(interfaces.plugins.PluginInterface):
         ):
             raise ValueError("Cannot use filter flag with an address flag")
 
-        if self.config.get("virtaddr", None) is not None:
-            offsets.append((self.config["virtaddr"], True))
-        elif self.config.get("physaddr", None) is not None:
-            offsets.append((self.config["physaddr"], False))
-        else:
+        if self.config.get("virtaddr"):
+            for virtaddr in self.config["virtaddr"]:
+                offsets.append((virtaddr, True))
+
+        if self.config.get("physaddr"):
+            for physaddr in self.config["physaddr"]:
+                offsets.append((physaddr, False))
+
+        if not offsets:
             filter_func = pslist.PsList.create_pid_filter(
                 [self.config.get("pid", None)]
             )
