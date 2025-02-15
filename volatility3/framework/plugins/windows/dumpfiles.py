@@ -322,17 +322,19 @@ class DumpFiles(interfaces.plugins.PluginInterface):
         elif offsets:
             virtual_layer_name = kernel.layer_name
 
-            #FIXME - change this after standard access to physical layer
+            # FIXME - change this after standard access to physical layer
             physical_layer_name = self.context.layers[virtual_layer_name].config[
                 "memory_layer"
             ]
 
-           # Now process any offsets explicitly requested by the user.
+            # Now process any offsets explicitly requested by the user.
             for offset, is_virtual in offsets:
                 try:
                     file_obj = self.context.object(
                         kernel.symbol_table_name + constants.BANG + "_FILE_OBJECT",
-                        layer_name=virtual_layer_name if is_virtual else physical_layer_name,
+                        layer_name=(
+                            virtual_layer_name if is_virtual else physical_layer_name
+                        ),
                         native_layer_name=virtual_layer_name,
                         offset=offset,
                     )
