@@ -663,9 +663,8 @@ class RecoverFs(plugins.PluginInterface):
             ),
         ]
 
-    @classmethod
     def _tar_add_reg_inode(
-        cls,
+        self,
         context: interfaces.context.ContextInterface,
         layer_name: str,
         tar: tarfile.TarFile,
@@ -705,9 +704,8 @@ class RecoverFs(plugins.PluginInterface):
 
         return handle_buffer_size
 
-    @classmethod
     def _tar_add_dir(
-        cls,
+        self,
         tar: tarfile.TarFile,
         directory_path: str,
         mtime: float = None,
@@ -726,9 +724,8 @@ class RecoverFs(plugins.PluginInterface):
             tar_info.mtime = mtime
         tar.addfile(tar_info)
 
-    @classmethod
     def _tar_add_lnk(
-        cls,
+        self,
         tar: tarfile.TarFile,
         symlink_source: str,
         symlink_dest: str,
