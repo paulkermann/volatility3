@@ -633,7 +633,8 @@ class InodePages(plugins.PluginInterface):
 class RecoverFs(plugins.PluginInterface):
     """Recovers the cached filesystem (directories, files, symlinks) into a compressed tarball.
 
-    Details: level 0 directories are named after the UUID of the parent superblock; metadata aren't replicated to extracted objects; objects modification time is set to the plugin run time.
+    Details: level 0 directories are named after the UUID of the parent superblock; metadata aren't replicated to extracted objects; objects modification time is set to the plugin run time; absolute symlinks
+    are converted to relative symlinks to prevent referencing the analyst filesystem.
     Troubleshooting: to fix extraction errors related to long paths, please consider using https://github.com/mxmlnkn/ratarmount.
     """
 
