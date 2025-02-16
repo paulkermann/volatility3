@@ -284,6 +284,7 @@ class Intel(linear.LinearlyMappedLayer):
 
         return entry, position
 
+    @functools.lru_cache(maxsize=1025)
     def _get_valid_table(self, base_address: int) -> Optional[bytes]:
         """Extracts the table, validates it and returns it if it's valid."""
         table = self._context.layers.read(
