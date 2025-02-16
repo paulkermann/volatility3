@@ -138,16 +138,25 @@ class Modules(interfaces.plugins.PluginInterface):
         """
         module = context.modules[module_name]
 
+        # default is used if/when MmSystemRangeStart is paged out
         if symbols.symbol_table_is_64bit(context, module.symbol_table_name):
             object_type = "unsigned long long"
+            default_start = 0xFFFF800000000000
         else:
             object_type = "unsigned long"
+            default_start = 0x80000000
 
         range_start_offset = module.get_symbol("MmSystemRangeStart").address
 
-        kernel_space_start = module.object(
-            object_type=object_type, offset=range_start_offset
-        )
+        try:
+            kernel_space_start = module.object(
+                object_type=object_type, offset=range_start_offset
+            )
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Unable to read MmSystemRangeStart. Defaulting to {default_start:#x} for the kernel space start."
+            )
+            kernel_space_start = default_start
 
         layer = context.layers[module.layer_name]
 
