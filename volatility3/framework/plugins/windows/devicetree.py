@@ -95,14 +95,10 @@ class DeviceTree(interfaces.plugins.PluginInterface):
         ]
 
     def _generator(self) -> Iterator[Tuple]:
-        kernel = self.context.modules[self.config["kernel"]]
-
         # Scan the Layer for drivers
         for driver in driverscan.DriverScan.scan_drivers(
             self.context,
             self.config["kernel"],
-            kernel.layer_name,
-            kernel.symbol_table_name,
         ):
             try:
                 try:

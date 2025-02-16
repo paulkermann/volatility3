@@ -34,8 +34,6 @@ class DriverScan(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
-        layer_name: str,
-        symbol_table_name: str,
     ) -> Iterable[interfaces.objects.ObjectInterface]:
         """Scans for drivers using the poolscanner module and constraints.
 
@@ -47,6 +45,11 @@ class DriverScan(interfaces.plugins.PluginInterface):
         Returns:
             A list of Driver objects as found from the `layer_name` layer based on Driver pool signatures
         """
+
+        kernel = context.modules[kernel_module_name]
+
+        symbol_table_name = kernel.symbol_table_name
+        layer_name = kernel.layer_name
 
         constraints = poolscanner.PoolScanner.builtin_constraints(
             symbol_table_name, [b"Dri\xf6", b"Driv"]
@@ -116,13 +119,9 @@ class DriverScan(interfaces.plugins.PluginInterface):
         return driver_name, service_key, name
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         for driver in self.scan_drivers(
             self.context,
             self.config["kernel"],
-            kernel.layer_name,
-            kernel.symbol_table_name,
         ):
             driver_name, service_key, name = self.get_names_for_driver(driver)
 

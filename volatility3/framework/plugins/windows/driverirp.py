@@ -83,8 +83,6 @@ class DriverIrp(interfaces.plugins.PluginInterface):
         for driver in driverscan.DriverScan.scan_drivers(
             self.context,
             self.config["kernel"],
-            kernel.layer_name,
-            kernel.symbol_table_name,
         ):
             try:
                 driver_name = driver.get_driver_name()

@@ -55,8 +55,6 @@ class DriverModule(interfaces.plugins.PluginInterface):
         for driver in driverscan.DriverScan.scan_drivers(
             self.context,
             self.config["kernel"],
-            kernel.layer_name,
-            kernel.symbol_table_name,
         ):
             # We want starts of 0 as rootkits often set this value
             # greater than 0 but less than the kernel space start is smear/terminated though

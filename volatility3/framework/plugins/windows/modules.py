@@ -153,6 +153,9 @@ class Modules(interfaces.plugins.PluginInterface):
                 object_type=object_type, offset=range_start_offset
             )
         except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Unable to read MmSystemRangeStart. Defaulting to {default_start:#x} for the kernel space start."
+            )
             kernel_space_start = default_start
 
         layer = context.layers[module.layer_name]
